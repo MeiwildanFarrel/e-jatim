@@ -1,0 +1,286 @@
+openapi: 3.0.3
+info:
+  title: E-Jatim TrustLink — Mock SNAP BI Reference API
+  description: >
+    Spesifikasi mock API bergaya SNAP BI (Standar Nasional Open API Pembayaran),
+    disusun mengacu pada struktur resmi SNAP BI (SK Gubernur BI No. 23/10/KEP.GBI/2021
+    dan PADG No. 23/15/PADG/2021). Dokumen ini merepresentasikan endpoint
+    account-inquiry dan transaction-history untuk keperluan Proof of Concept (PoC)
+    E-Jatim TrustLink — BUKAN koneksi produksi ke Penyelenggara Jasa Pembayaran (PJP)
+    berlisensi. Struktur field dan header divalidasi berdasarkan dokumentasi publik
+    SNAP BI (BRI API Developer Portal, apidevportal.bi.go.id), namun nilai dan
+    validasi signature pada PoC ini bersifat simulasi. Sejak 1 September 2023,
+    pengelolaan operasional SNAP (termasuk publikasi dan pembaruan standar teknis)
+    telah dialihkan Bank Indonesia kepada ASPI (Asosiasi Sistem Pembayaran Indonesia)
+    sebagai Self-Regulatory Organization; perizinan PJP tetap kewenangan BI/OJK.
+  version: "0.1.0-poc"
+  contact:
+    name: E-Jatim TrustLink Team — Anggota A (Tech Lead)
+servers:
+  - url: https://e-jatim.vercel.app/api/mock-snap
+    description: Mock server (PoC) — bukan endpoint produksi SNAP BI
+
+paths:
+  /account-inquiry:
+    post:
+      summary: Account Inquiry (mock)
+      description: >
+        Mensimulasikan pengecekan validitas dan informasi dasar merchant QRIS UMKM,
+        mengikuti pola request/response SNAP BI account-inquiry.
+      operationId: accountInquiry
+      parameters:
+        - $ref: '#/components/parameters/XTimestamp'
+        - $ref: '#/components/parameters/XSignature'
+        - $ref: '#/components/parameters/XPartnerId'
+        - $ref: '#/components/parameters/XExternalId'
+        - $ref: '#/components/parameters/ChannelId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInquiryRequest'
+            example:
+              partnerReferenceNo: "20260710000000000001"
+              beneficiaryAccountNo: "QRIS-MOCK-001"
+              additionalInfo:
+                deviceId: "e-jatim-poc-device"
+                channel: "web"
+      responses:
+        '200':
+          description: Sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountInquiryResponse'
+              example:
+                responseCode: "2001100"
+                responseMessage: "Successful"
+                referenceNo: "202607100000000001"
+                partnerReferenceNo: "20260710000000000001"
+                accountNo: "QRIS-MOCK-001"
+                name: "Nasi Campur Bu Sari"
+                additionalInfo:
+                  accountType: "QRIS_MERCHANT"
+                  status: "ACTIVE"
+        '400':
+          description: Permintaan tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                responseCode: "4001100"
+                responseMessage: "Invalid Field Format"
+
+  /transaction-history:
+    post:
+      summary: Transaction History (mock)
+      description: >
+        Mensimulasikan penarikan riwayat transaksi QRIS/e-wallet UMKM dalam
+        rentang waktu tertentu, mengikuti pola request/response SNAP BI
+        (setara layanan bank statement / transaction history).
+      operationId: transactionHistory
+      parameters:
+        - $ref: '#/components/parameters/XTimestamp'
+        - $ref: '#/components/parameters/XSignature'
+        - $ref: '#/components/parameters/XPartnerId'
+        - $ref: '#/components/parameters/XExternalId'
+        - $ref: '#/components/parameters/ChannelId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionHistoryRequest'
+            example:
+              accountNo: "QRIS-MOCK-001"
+              fromDateTime: "2026-07-01T00:00:00+07:00"
+              toDateTime: "2026-07-10T23:59:59+07:00"
+      responses:
+        '200':
+          description: Sukses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionHistoryResponse'
+              example:
+                responseCode: "2001400"
+                responseMessage: "Successful"
+                referenceNo: "202607100000000002"
+                totalCreditEntries:
+                  numberOfEntries: "2"
+                  amount:
+                    value: "7300000.00"
+                    currency: "IDR"
+                totalDebitEntries:
+                  numberOfEntries: "1"
+                  amount:
+                    value: "250000.00"
+                    currency: "IDR"
+                detailData:
+                  - amount:
+                      value: "3500000.00"
+                      currency: "IDR"
+                    transactionDate: "2026-07-04T09:12:00+07:00"
+                    remark: "Pembayaran QRIS - Penjualan harian"
+                    transactionId: "TRX-MOCK-0001"
+                    type: "Credit"
+                  - amount:
+                      value: "250000.00"
+                      currency: "IDR"
+                    transactionDate: "2026-07-05T14:30:00+07:00"
+                    remark: "Beli bahan baku sayur dan daging"
+                    transactionId: "TRX-MOCK-0002"
+                    type: "Debit"
+        '400':
+          description: Permintaan tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    XTimestamp:
+      name: X-TIMESTAMP
+      in: header
+      required: true
+      schema:
+        type: string
+        format: date-time
+      description: Waktu request, format ISO 8601 dengan offset zona waktu
+    XSignature:
+      name: X-SIGNATURE
+      in: header
+      required: true
+      schema:
+        type: string
+      description: >
+        Tanda tangan digital request. Pada PoC ini nilai disimulasikan dan
+        TIDAK divalidasi secara kriptografis nyata.
+    XPartnerId:
+      name: X-PARTNER-ID
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Identitas mitra (PJP/TPP) pemanggil API
+    XExternalId:
+      name: X-EXTERNAL-ID
+      in: header
+      required: true
+      schema:
+        type: string
+      description: ID unik request untuk mencegah duplikasi (idempotency reference)
+    ChannelId:
+      name: CHANNEL-ID
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Kanal asal request, misal "web" atau "mobile"
+
+  schemas:
+    AccountInquiryRequest:
+      type: object
+      required: [partnerReferenceNo, beneficiaryAccountNo]
+      properties:
+        partnerReferenceNo:
+          type: string
+        beneficiaryAccountNo:
+          type: string
+        additionalInfo:
+          type: object
+          additionalProperties: true
+
+    AccountInquiryResponse:
+      type: object
+      properties:
+        responseCode:
+          type: string
+        responseMessage:
+          type: string
+        referenceNo:
+          type: string
+        partnerReferenceNo:
+          type: string
+        accountNo:
+          type: string
+        name:
+          type: string
+        additionalInfo:
+          type: object
+          additionalProperties: true
+
+    TransactionHistoryRequest:
+      type: object
+      required: [accountNo, fromDateTime, toDateTime]
+      properties:
+        accountNo:
+          type: string
+        fromDateTime:
+          type: string
+          format: date-time
+        toDateTime:
+          type: string
+          format: date-time
+
+    TransactionHistoryResponse:
+      type: object
+      properties:
+        responseCode:
+          type: string
+        responseMessage:
+          type: string
+        referenceNo:
+          type: string
+        totalCreditEntries:
+          $ref: '#/components/schemas/EntrySummary'
+        totalDebitEntries:
+          $ref: '#/components/schemas/EntrySummary'
+        detailData:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionDetail'
+
+    EntrySummary:
+      type: object
+      properties:
+        numberOfEntries:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Amount'
+
+    TransactionDetail:
+      type: object
+      properties:
+        amount:
+          $ref: '#/components/schemas/Amount'
+        transactionDate:
+          type: string
+          format: date-time
+        remark:
+          type: string
+        transactionId:
+          type: string
+        type:
+          type: string
+          enum: [Credit, Debit]
+
+    Amount:
+      type: object
+      properties:
+        value:
+          type: string
+        currency:
+          type: string
+          example: IDR
+
+    ErrorResponse:
+      type: object
+      properties:
+        responseCode:
+          type: string
+        responseMessage:
+          type: string
