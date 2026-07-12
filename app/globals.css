@@ -12,15 +12,66 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+ * Animasi scroll-reveal (dipakai komponen <Reveal/> di halaman publik).
+ * Konten TIDAK boleh bergantung pada animasi untuk terbaca: nilai akhir selalu
+ * ada di markup; JS hanya menambahkan kelas .is-visible saat masuk viewport.
+ * ------------------------------------------------------------------------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Batang ilustrasi CTA "tumbuh" satu kali saat section masuk viewport */
+.cta-bar {
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.is-visible .cta-bar {
+  transform: scaleY(1);
+}
+
+.cta-node {
+  opacity: 0;
+  transition: opacity 0.6s ease-out;
+}
+
+.is-visible .cta-node {
+  opacity: 1;
+}
+
+/* Aksesibilitas: user yang menyetel reduced-motion mendapat konten statis
+ * penuh — tanpa transisi, tanpa smooth scroll, tanpa keadaan tersembunyi. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal,
+  .cta-bar,
+  .cta-node {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

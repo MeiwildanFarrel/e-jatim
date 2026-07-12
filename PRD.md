@@ -16,24 +16,26 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 
 ## 2. Fitur Utama — IN SCOPE (PoC)
 
-### F1. Auto-Ledger Engine ✅ (Tier 1 & Tier 2 selesai, Tier 3 belum)
+### F1. Auto-Ledger Engine ✅ (Tier 1 & Tier 2 selesai & diverifikasi audit independen 12 Juli, Tier 3 belum)
 - Tarik/terima data transaksi → klasifikasi ke pos akuntansi SAK EMKM.
-- **Pipeline AI hybrid 3 lapis**: Tier 1 Regex (~60%, **selesai & teruji**) → Tier 2 zero-shot classification via Hugging Face Inference API (~30%, **selesai & teruji 12 Juli**) → Tier 3 LLM (Gemini Flash, ~10%, edge case, *belum dibangun* — transaksi yang lolos dari Tier 1+2 ditandai `classification_status='needs_tier3'`, endpoint-nya sendiri belum ada).
-- **Model Tier 2 — final, 12 Juli**: model NLI multilingual yang mencakup Bahasa Indonesia (`MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7`), dipilih setelah eksplorasi sistematis terhadap 9 model IndoBERT/turunan-Indonesia-asli — lintas 4 jenis task (zero-shot-classification, text-classification, fill-mask, sentence-similarity) — yang ternyata **tidak ter-host gratis** di Hugging Face Inference API, atau untuk yang genuinely ter-host, **terbukti berkualitas lebih rendah secara empiris** (contoh: salah top-1 di kasus jelas, confidence tidak terdiferensiasi). Detail lengkap 2 putaran riset ada di TASK.md §2.2 — ini keputusan final, tidak perlu dieksplorasi ulang.
+- **Pipeline AI hybrid 3 lapis**: Tier 1 Regex (28 rule di `regexRules.ts`, ~93% transaksi seed — 930/994, **selesai & teruji, diaudit independen**) → Tier 2 zero-shot classification via Hugging Face Inference API (~1%, **selesai & teruji**) → Tier 3 LLM (Gemini Flash, edge case, *belum dibangun* — transaksi yang lolos dari Tier 1+2 ditandai `classification_status='needs_tier3'`, endpoint-nya sendiri belum ada; saat ini 55/994 transaksi Bu Sari berstatus ini).
+- **Model Tier 2 — final, 12 Juli**: model NLI multilingual yang mencakup Bahasa Indonesia (`MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7`), dipilih setelah eksplorasi sistematis terhadap 9 model IndoBERT/turunan-Indonesia-asli — lintas 4 jenis task (zero-shot-classification, text-classification, fill-mask, sentence-similarity) — yang ternyata **tidak ter-host gratis** di Hugging Face Inference API, atau untuk yang genuinely ter-host, **terbukti berkualitas lebih rendah secara empiris**. Detail lengkap 2 putaran riset ada di TASK.md §2.2 — ini keputusan final, tidak perlu dieksplorasi ulang.
 - Threshold confidence **0.5** (di bawah itu ditandai `needs_tier3`, bukan dipaksa klasifikasi).
+- Nominal transaksi (Rupiah) **selalu berasal dari kolom `transactions.amount` yang terstruktur** — tidak pernah diekstrak dari teks bebas (diverifikasi via audit independen 12 Juli, grep menyeluruh: tidak ada logic parsing nominal dari string). Ini keputusan desain yang tepat untuk sumber data QRIS/e-wallet (nominal sudah terstruktur dari sumbernya), bukan gap — OCR struk kertas yang butuh ekstraksi teks eksplisit **Out of Scope** (lihat §3).
 - **📌 Catatan untuk Anggota C (penulis paper)**: Bab 2/3 paper **jangan menyebut "IndoBERT" mentah-mentah** untuk Tier 2 — pakai framing di atas ("model NLI multilingual yang mencakup Bahasa Indonesia, dipilih setelah eksplorasi sistematis"). Ini justru poin metodologis yang solid (due diligence), bukan kelemahan — tapi klaimnya harus akurat.
 - **Double-entry**: setiap transaksi = 2 baris (debit + kredit), `journal_type` = `kas_masuk` / `kas_keluar` / `umum`. Keputusan final, tidak berubah.
 - **Logic Engine** (murni SQL/TypeScript) menghitung totals & laporan — bukan AI. AI (Tier 1/2/3) **hanya** menentukan kategori akun, tidak pernah menghitung nominal debit/kredit.
 
-### F2. Laporan Keuangan / Neraca Saldo ✅ (selesai 12 Juli)
+### F2. Laporan Keuangan / Neraca Saldo ✅ (selesai 12 Juli, diverifikasi audit independen)
 - Endpoint **Trial Balance**: agregasi `ledger_entries` per akun berdasarkan `chart_of_accounts`, validasi **total debit = total kredit**.
-- **Dashboard** (`app/dashboard/page.tsx`) menampilkan 3 laporan dasar SAK EMKM (Laba Rugi, Posisi Keuangan/Neraca, Catatan) diturunkan dari Trial Balance — logic murni TypeScript di `src/lib/reports/` (`trialBalance.ts`, `financialStatements.ts`, `notes.ts`), bukan AI.
+- **Dashboard** (`app/dashboard/page.tsx`) menampilkan 3 laporan dasar SAK EMKM (Laba Rugi, Posisi Keuangan/Neraca, Catatan) diturunkan dari Trial Balance — logic murni TypeScript di `src/lib/reports/` (`trialBalance.ts`, `financialStatements.ts`, `notes.ts`), bukan AI. Diverifikasi live (bukan cuma laporan lama): render benar, data real-time dari Supabase, cocok persis dengan query independen.
 - Neraca menyertakan indikator eksplisit Aset = Liabilitas + Modal (warning jelas kalau tidak seimbang), Catatan secara jujur melaporkan jumlah transaksi `needs_tier3` yang belum tercermin di laporan.
 
-### F3. Alternative Credit Scoring (ACS)
+### F3. Alternative Credit Scoring (ACS) — 🔜 belum dibangun (endpoint hitung skor masih backlog)
 - `Score = w₁·Growth + w₂·Stability + w₃·Reputation − w₄·RiskFactor`.
 - Model: Random Forest + XGBoost; evaluasi AUC-ROC, F1, Gini, SHAP.
 - Output: speedometer Hijau/Kuning/Merah (mis. "Hijau 72/100").
+- ⚠️ **Temuan 12 Juli**: tabel `credit_scores` sudah punya **1 baris data dummy** untuk Bu Sari (`score: 72, score_category: "Hijau", model_version: "v0.1-dummy"`) — ini kemungkinan besar seed manual/placeholder, **BUKAN** hasil pipeline ACS sungguhan (pipeline-nya sendiri belum dikerjakan Anggota B). Boleh dipakai sebagai placeholder untuk demo UI Minggu 3 (speedometer), **tapi WAJIB ditandai jelas di kode & UI sebagai data dummy** (mis. cek `model_version` mengandung `"dummy"` → tampilkan badge "Contoh/Placeholder") supaya tidak keliru dikira skor ACS asli saat demo/review.
 
 ### F4. Reputation Score (NLP)
 - Analisis sentimen ulasan marketplace (Word2Vec + Random Forest — expertise Pak Sena).
@@ -42,9 +44,10 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 ### F5. Gamifikasi Rapor Sehat Keuangan
 - Speedometer visual, tantangan 30 hari, notifikasi progress mingguan (basis Self-Determination Theory).
 
-### F6. Alur Verifikasi Sisi Bank 🔜 (ditambahkan setelah pembedahan Bab 3 — sebelumnya tidak eksplisit di scope)
-- View sederhana untuk "Analis Kredit" (representasi peran Pak Arief, lihat §5): buka profil UMKM → lihat 3 laporan keuangan + skor ACS + Reputation Score → aksi approve/reject.
-- Mengubah `status` di `loan_applications`, dengan selisih `submitted_at`→`decided_at` mensimulasikan verifikasi cepat (~3 hari) sebagai kontras terhadap proses manual 14–30 hari yang jadi argumen masalah di paper.
+### F6. Alur Verifikasi Sisi Bank 🔜 (skema `loan_applications` baru diverifikasi 12 Juli — lihat §4.1, BERBEDA SIGNIFIKAN dari dugaan awal)
+- View sederhana untuk "Analis Kredit" (representasi peran Pak Arief, lihat §5): buka profil UMKM → lihat 3 laporan keuangan + skor ACS (placeholder, lihat F3) + Reputation Score → aksi approve/reject.
+- Mengubah `status` di `loan_applications`, dengan selisih `created_at`→`reviewed_at` (⚠️ **bukan** `submitted_at`→`decided_at` seperti draft awal — kolom itu tidak eksis, lihat §4.1) mensimulasikan verifikasi cepat (~3 hari) sebagai kontras terhadap proses manual 14–30 hari yang jadi argumen masalah di paper.
+- Tabel punya kolom tambahan yang belum termanfaatkan di desain awal: `credit_score_id` (FK ke `credit_scores` — pakai ini untuk link ke skor yang direview), `bank_analyst_id`, `decision_notes` (kolom untuk catatan keputusan Pak Arief — bisa dimanfaatkan untuk demo yang lebih kaya).
 - **Ini bukan fitur tambahan bebas** — ini prasyarat supaya skenario Pak Arief di Bab 3 bisa didemokan nyata, bukan cuma diceritakan.
 
 ### F7. Spesifikasi Mock API (SNAP BI-style) 🔜 (deliverable Minggu 1 — sempat tertunda, lihat TASK.md)
@@ -57,7 +60,7 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 
 - ❌ **Integrasi SNAP BI produksi** (butuh PJP berlisensi) → PoC pakai **mock API**.
 - ❌ **Menjadi PKA berlisensi** (POJK 29/2024 butuh modal Rp 5 M + lisensi OJK) → posisikan sebagai *middleware integrator*, jadi rekomendasi kebijakan.
-- ❌ **OCR struk transaksi cash** → diakui sebagai limitasi jujur di paper (jadi argumen insentif adopsi QRIS).
+- ❌ **OCR struk transaksi cash** → diakui sebagai limitasi jujur di paper (jadi argumen insentif adopsi QRIS). Konsekuensi teknis: Auto-Ledger tidak pernah perlu mengekstrak nominal dari teks bebas — nominal selalu terstruktur dari sumber data digital (lihat F1).
 - ❌ **Tier 3 LLM real** untuk volume besar → hanya edge case minimal.
 - ❌ **Migrasi Data Center Indonesia** (isu PP 71/2019) → roadmap produksi, bukan PoC.
 - ❌ **Type generation Supabase, notifikasi push real, multi-tenant scaling** → nice-to-have pasca-lomba.
@@ -69,40 +72,27 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 
 > Nama kolom **case-sensitive** di kode (belum ada typed schema, jadi typo tidak ke-warning TypeScript). Tulis persis.
 
-> ⚠️ **Status verifikasi kolom** — jangan anggap semua tabel di bawah sama-sama pasti. Tabel di §4.1 dikutip persis dari SQL yang pernah tampil di sesi coding. Tabel di §4.2 direkonstruksi dari pola penamaan proyek — **cek ke Supabase Table Editor / hasil `\d nama_tabel` sebelum dipakai di kode**, terutama nama kolom yang bisa saja beda (mis. `debit`/`kredit` vs `debit_amount`/`credit_amount`).
-
-### 4.1 — Terverifikasi dari SQL asli
+### 4.1 — Terverifikasi dari live DB (audit langsung, bukan asumsi)
 
 **`chart_of_accounts`** (master akun — 21 akun, kode 101–711)
-`account_code` (PK, mis. 101), `account_name`, `account_type` — ⚠️ **koreksi 12 Juli, dicek langsung ke live DB saat bangun dashboard**: nilai asli **istilah Inggris** `'Asset'`/`'Liability'`/`'Equity'`/`'Revenue'`/`'Expense'`, BUKAN `Aset/Liabilitas/Modal/Pendapatan/Beban` seperti tertulis di draft awal — kalau menulis query/grouping baru berdasarkan `account_type`, pakai nilai Inggris. `normal_balance` (`'debit'`/`'credit'` — istilah Inggris, terverifikasi 11 Juli), `is_active`, `created_at`.
+`account_code` (PK, mis. 101), `account_name`, `account_type` (nilai **Inggris**: `'Asset'`/`'Liability'`/`'Equity'`/`'Revenue'`/`'Expense'` — dikonfirmasi ulang via audit 12 Juli, tidak ada logic di codebase yang salah pakai nilai Indonesia), `normal_balance` (`'debit'`/`'credit'`), `is_active`, `created_at`.
 
-**`ledger_entries`** (double-entry — hasil Auto-Ledger) — ✅ **diverifikasi langsung dari live Supabase schema (11 Juli, via endpoint Trial Balance)**
-`id` (uuid PK), `umkm_id` (FK), `transaction_id` (FK, opsional), `account_code` (FK → chart_of_accounts), **`entry_side`** (`'debit'`/`'credit'` — bukan kolom debit & kredit terpisah), **`amount`** (nominal tunggal, sisi ditentukan `entry_side`), `journal_type` (`kas_masuk`/`kas_keluar`/`umum`), `period_month`, **`confidence_score`** (skor keyakinan klasifikasi — belum diketahui detail pengisiannya, perlu diklarifikasi ke Anggota A), `created_at`. **Invariant: Σamount(entry_side=debit) = Σamount(entry_side=credit).**
+**`ledger_entries`** (double-entry — hasil Auto-Ledger)
+`id` (uuid PK), `umkm_id` (FK), `transaction_id` (FK, opsional), `account_code` (FK → chart_of_accounts), `entry_side` (`'debit'`/`'credit'`), `amount`, `journal_type` (`kas_masuk`/`kas_keluar`/`umum`), `period_month`, `confidence_score` (terisi nyata untuk Tier 2, bervariasi 0.53–0.91, dikonfirmasi bukan nilai hardcoded), `created_at`. **Invariant: Σamount(entry_side=debit) = Σamount(entry_side=credit).** Model data **long format** — pakai `entry_side`/`amount`, BUKAN `debit`/`kredit` terpisah.
 
-> ⚠️ Koreksi dari draft awal: model data ini **long format** (satu kolom `amount` + penanda sisi), bukan **wide format** (kolom `debit` & `kredit` terpisah) seperti asumsi sebelumnya. Kalau menulis query/endpoint baru yang menyentuh `ledger_entries`, pakai `entry_side`/`amount`, BUKAN `debit`/`kredit`.
+**`marketplace_reviews`** — `id`, `umkm_id`, `platform`, `review_text`, `rating`, `sentiment_label`, `sentiment_confidence`, `review_date`, `created_at`.
 
-**`chart_of_accounts`** — koreksi nilai `normal_balance`: pakai istilah **Inggris** `'debit'`/`'credit'`, bukan `'debit'`/`'kredit'`.
+**`gamification_progress`** — `id`, `umkm_id`, `challenge_type`, `current_streak`, `longest_streak`, `last_activity_date`, `updated_at`.
 
-**`marketplace_reviews`** (input Reputation Score)
-`id` (uuid PK), `umkm_id` (FK), `platform` (tokopedia/shopee/google_maps), `review_text`, `rating`, `sentiment_label` (positif/netral/negatif), `sentiment_confidence` (numeric 4,3), `review_date`, `created_at`.
+**`consent_records`** — `id`, `umkm_id`, `consent_type`, `granted`, `granted_at`, `revoked_at`, `ip_address`, `created_at`.
 
-**`gamification_progress`**
-`id` (uuid PK), `umkm_id` (FK), `challenge_type` (mis. `30_day_recording_streak`), `current_streak`, `longest_streak`, `last_activity_date`, `updated_at`.
+**`umkm_profiles`** — ✅ **diverifikasi 12 Juli (sebelumnya dugaan)**: `id`, `user_id`, `business_name`, `owner_name`, `business_category` (⚠️ bukan `sector` seperti dugaan awal), `city`, `province` (⚠️ dugaan awal cuma tulis "city/region" ambigu — ternyata 2 kolom terpisah), `qris_merchant_id` (kolom baru, tidak terduga), `consent_given_at` (kolom baru), `created_at`, `updated_at`. Data Bu Sari terverifikasi lengkap: business_name="Nasi Campur Bu Sari", owner_name="Sari Wulandari", business_category="Kuliner", city="Surabaya", province="Jawa Timur".
 
-**`consent_records`** (audit trail UU PDP)
-`id` (uuid PK), `umkm_id` (FK), `consent_type` (`transaction_data_access`/`marketplace_review_access`), `granted` (bool), `granted_at`, `revoked_at`, `ip_address`, `created_at`.
+**`transactions`** — dugaan lama (belum diverifikasi eksplisit sesi ini, tapi terpakai konsisten di seluruh pipeline Tier1/2 tanpa error): `id`, `umkm_id`, `amount`, `description`, `source`, `transaction_date`, `classification_status`, `classification_tier`, `created_at`.
 
-### 4.2 — Belum terverifikasi (direkonstruksi dari pola, ⚠️ cek dulu ke DB asli)
+**`credit_scores`** — ✅ **diverifikasi 12 Juli (sebelumnya dugaan, BERBEDA dari dugaan awal)**: `id`, `umkm_id`, `score`, `score_category` (⚠️ bukan `band`), `growth_score`, `stability_score`, `reputation_score`, `risk_factor_score` (⚠️ 4 kolom ini masing-masing berakhiran `_score`, beda dari dugaan awal yang lebih pendek), `calculated_at` (⚠️ bukan `computed_at`), `model_version` (kolom baru, tidak terduga — dipakai untuk menandai `"v0.1-dummy"` pada baris placeholder Bu Sari, lihat F3). Sudah ada 1 baris data (Bu Sari, dummy).
 
-**`umkm_profiles`** — dugaan: `id` (uuid PK), `user_id` (FK → `auth.users`), `business_name`, `owner_name`, `sector`, `city`/`region`, `created_at`.
-
-**`transactions`** (data mentah transaksi) — dugaan: `id` (uuid PK), `umkm_id` (FK), `amount`, `description`, `source` (qris/gopay/dll), `transaction_date`, `created_at`.
-
-**`credit_scores`** (output ACS) — dugaan: `id` (uuid PK), `umkm_id` (FK), `score`, `growth`, `stability`, `reputation`, `risk_factor`, `band` (hijau/kuning/merah), `computed_at`.
-
-**`loan_applications`** — dugaan: `id` (uuid PK), `umkm_id` (FK), `amount_requested`, `status` (draft/submitted/approved/rejected), `submitted_at`, `decided_at`. *(Tabel ini jadi krusial untuk F6/skenario Pak Arief — prioritaskan verifikasi kolom asli sebelum mulai kerjakan Minggu 3.)*
-
-**Index** (dugaan pola umum, belum diverifikasi): `umkm_id` di sebagian besar tabel; `ledger_entries(umkm_id, period_month)`; `loan_applications(status)`.
+**`loan_applications`** — ✅ **diverifikasi 12 Juli (sebelumnya dugaan, BERBEDA SIGNIFIKAN — baca sebelum coding F6)**: `id`, `umkm_id`, `credit_score_id` (FK ke `credit_scores`, kolom baru tidak terduga), `requested_amount` (⚠️ bukan `amount_requested`, urutan kata terbalik), `status`, `bank_analyst_id` (kolom baru), `reviewed_at` (⚠️ bukan `decided_at`), `decision_notes` (kolom baru), `created_at`. **⚠️ KOLOM `submitted_at` TIDAK ADA SAMA SEKALI** — draft awal PRD ini salah total mengasumsikan kolom itu ada; pakai `created_at` untuk keperluan yang sama. Tabel masih kosong (0 baris) — belum dipakai, sesuai status F6 yang memang belum dikerjakan.
 
 **RLS**: aktif di semua tabel. UMKM hanya boleh akses datanya sendiri (`auth.uid() = user_id`, atau via subquery `umkm_id in (select id from umkm_profiles where user_id = auth.uid())`). Proses backend memakai **service role key** (bypass RLS, server-side only).
 
@@ -112,15 +102,13 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 
 Bab 3 proposal berisi **dua** skenario stakeholder yang harus benar-benar bisa didemokan (bukan cuma narasi) — keduanya saling terhubung lewat data yang sama:
 
-- **Bu Sari** — Nasi Campur Bu Sari, Surabaya. Sisi **pemohon (UMKM)**: consent akses data → Auto-Ledger jalan dari data transaksi → skor ACS (target demo: Hijau 72/100, **growth arus kas +18% total dari bulan pertama ke bulan ketiga** — lihat keputusan resmi di bawah) → ajukan KUR. ~~**Perlu seed data rentang ~3 bulan**~~ **Selesai 11 Juli** — lihat catatan seed 3 bulan di bawah.
+- **Bu Sari** — Nasi Campur Bu Sari, Surabaya (`business_category`: Kuliner, `city`: Surabaya, `province`: Jawa Timur — data profil terverifikasi 12 Juli). Sisi **pemohon (UMKM)**: consent akses data → Auto-Ledger jalan dari data transaksi → skor ACS (target demo: Hijau 72/100 — **saat ini masih data dummy/placeholder di `credit_scores`, lihat F3**, growth arus kas +18% total dari bulan pertama ke bulan ketiga) → ajukan KUR.
 
-> ⚠️ **Catatan seed 3 bulan Bu Sari (selesai 11 Juli)** — `scripts/seed-bu-sari-3-months.ts` men-generate 917 transaksi baru (1 Apr–29 Jun 2026, 5–15 transaksi/hari, non-seragam) via pipeline Tier 1 yang sudah ada (insert `transactions` → `/api/classify`), ditambahkan di atas 9 transaksi lama + 4 dari mock-snap ingest (tidak dihapus). Total sekarang 930 transaksi, 1.860 `ledger_entries`, **balance** (`total_debit = total_kredit = Rp376.925.000`).
+> ⚠️ **Catatan seed 3 bulan Bu Sari (selesai 11 Juli)** — 917 transaksi baru (1 Apr–29 Jun 2026) via pipeline Tier 1, ditambah 9 transaksi lama + 4 dari mock-snap ingest. Total 994 transaksi, 939 classified (930 Tier 1 + 9 Tier 2), 55 needs_tier3, 1.878 ledger_entries, **balance** (`total_debit = total_kredit = Rp380.345.000` per 12 Juli, termasuk transaksi uji tambahan).
 >
-> **✅ KEPUTUSAN RESMI (12 Juli) — Growth = +18% total, bukan per bulan.** Definisi lama "+18%/bulan" di draft awal **digugurkan** — kalimat itu penulisan naratif yang longgar, bukan spesifikasi teknis yang diverifikasi. Kalau dikompon 3× per bulan, itu setara ~+42% total dalam 2 bulan — pertumbuhan yang terlalu agresif untuk warung nasi campur dan berisiko terlihat tidak realistis di depan juri ekonom BI. Angka final yang dipakai di paper & demo: **data seed murni (1 Apr–29 Jun, isolasi dari transaksi lama)**: April Rp96.005.000 → Juni(1-29) Rp113.279.000 = **+18,0% total**. Ini angka yang benar-benar dihasilkan & diverifikasi sistem — bukan target yang ditulis manual.
->
-> *(Catatan tambahan, tidak dipakai sebagai acuan resmi: angka per kalender bulan versi sistem yang ikut membaurkan 1 transaksi lama tanggal 30 Juni menghasilkan +21,6% — perbedaan ini murni artefak pencampuran data lama+baru pada 1 hari, bukan sinyal yang berarti.)*
+> **✅ KEPUTUSAN RESMI (12 Juli) — Growth = +18% total, bukan per bulan.** Angka final: April Rp96.005.000 → Juni(1-29) Rp113.279.000 = **+18,0% total** — data riil terverifikasi sistem, bukan target manual.
 
-- **Pak Arief** — Analis Kredit Bank Jatim Cabang Surabaya. ⚠️ **Bukan UMKM kedua** — dia stakeholder sisi **bank/penilai**. Kondisi "sebelum": verifikasi manual 14–30 hari (kunjungan lapangan, cek fisik buku), 60% pengajuan ditolak karena bukti keuangan tidak cukup, bukan karena UMKM tak layak. Kondisi "sesudah": dia tinggal membuka laporan + skor yang sudah dihasilkan sistem dari data Bu Sari, lalu approve dalam ~3 hari. **Butuh view UI kedua** (lihat F6) yang mengonsumsi data yang sama dengan sisi Bu Sari — bukan data terpisah.
+- **Pak Arief** — Analis Kredit Bank Jatim Cabang Surabaya. ⚠️ **Bukan UMKM kedua** — dia stakeholder sisi **bank/penilai**. Kondisi "sebelum": verifikasi manual 14–30 hari, 60% pengajuan ditolak karena bukti keuangan tidak cukup. Kondisi "sesudah": dia buka laporan + skor yang sudah dihasilkan sistem dari data Bu Sari, lalu approve dalam ~3 hari (diukur dari `created_at`→`reviewed_at` di `loan_applications` — lihat koreksi skema §4.1). **Butuh view UI kedua** (lihat F6) yang mengonsumsi data yang sama dengan sisi Bu Sari.
 
 - **15–20 UMKM riil Jawa Timur** untuk reputation score (nama asli dari Google Maps, dikumpulkan Anggota B) — dataset pendukung F4, terpisah dari dua skenario demo di atas.
 - Dataset publik sebagai proxy untuk benchmarking ACS (Kaggle Home Credit / LendingClub yang disesuaikan) + data sekunder BPS/BI Jatim.

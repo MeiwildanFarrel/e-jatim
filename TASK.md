@@ -100,6 +100,19 @@ Target resmi: *"Auto-Ledger tahap awal jalan, dashboard menampilkan laporan otom
 
 > Temuan tambahan (di luar yang diminta secara literal, tapi bug yang sama persis di file yang sama): query `transactions` pending bukan satu-satunya yang tanpa pagination di `/api/classify` — dua query lain di endpoint yang sama (SUM `ledger_entries` per `entry_side` untuk field `trial_balance` di response) juga rentan bug GOTCHA #4. Ikut diperbaiki sekalian (pola `.range()` yang sama), karena keduanya di file yang sama dan justru menghitung angka yang dikembalikan endpoint ini sendiri.
 
+### 2.5 — Halaman publik: landing page + pendukung — ✅ SELESAI & TERVERIFIKASI (12 Juli)
+- [x] Route group `app/(public)/` dengan layout sendiri (SiteHeader + SiteFooter) — `app/page.tsx` boilerplate dihapus, dashboard TIDAK tersentuh (git diff `app/dashboard` + `src/` kosong, diverifikasi)
+- [x] `/` landing page: Hero (visual "kartu ledger" orisinal HTML/CSS) → Masalah & Data (4 statistik count-up dari proposal: Rp2.400T credit gap, 23% akses kredit, 10% melek keuangan digital, 60% pengajuan ditolak) → Cara Kerja (4 langkah alur Bu Sari) → Fitur & Manfaat (F1/F3/F4/F5, framing manfaat non-teknis) → Kepercayaan & Kepatuhan (consent, enkripsi, UU PDP) → FAQ (5 pertanyaan spesifik proyek, `<details>` native) → CTA penutup kartu gelap `blue-950` + ilustrasi SVG orisinal (batang tumbuh + jembatan titik-garis) → Footer
+- [x] `/tentang` (konteks EJAVEC 2026 + tim generik A/B/C), `/kebijakan-privasi` (ringkas, UU PDP 27/2022 Pasal 20 ayat 2 huruf a), `/masuk` (mock 2 kartu peran, tanpa password), `/bank` (placeholder F6 "sedang dibangun")
+- [x] Animasi: `Reveal` (IntersectionObserver native, sekali jalan) + `CountUp` (rAF, nilai akhir selalu di markup SSR) — `prefers-reduced-motion` dihormati dua lapis (cek `matchMedia` di JS + override `@media` di `globals.css`, diverifikasi rule-nya tersaji di CSS ter-serve)
+- [x] Mobile 360px: nol overflow horizontal di semua 5 halaman (diverifikasi programatis `scrollWidth`) — sempat ada bug kolom grid hero melar karena min-content baris `truncate`, diperbaiki dengan `min-w-0`
+- [x] Konten: tanpa logo pihak ketiga (QRIS/e-wallet disebut sebagai teks), tanpa foto stok (semua visual SVG/CSS orisinal), semua angka dari PRD/proposal
+- [x] `npm run build` lolos (16 route OK; catatan: `.next` perlu dihapus sekali karena types dev basi masih merujuk `app/page.tsx` lama)
+
+> ⚠️ Catatan verifikasi: screenshot via Browser pane tidak bisa diambil sesi ini (tab pane berstatus `visibilityState: hidden` → renderer pause, rAF/IO/screenshot semua beku — keterbatasan lingkungan, bukan bug halaman). Verifikasi dilakukan via accessibility tree + pemeriksaan DOM/CSS programatis. **Farrel: lihat sendiri di browser sekali untuk cek rasa visual.**
+>
+> Keputusan desain kecil yang menyentuh file bersama (bukan dashboard, tapi global): `app/layout.tsx` — metadata situs + `lang="id"`; `app/globals.css` — font body Arial → Geist (menyamakan dengan klaim styling dashboard di §2.3) dan hapus flip dark-mode bawaan create-next-app (DESIGN.md: light default, dark pasca-PoC). Dashboard set warna/bg eksplisit sendiri, jadi tidak terpengaruh flip; efek satu-satunya: font dashboard kini Geist betulan.
+
 ---
 
 ## 🔜 MINGGU 3 (17–23 Juli) — Integrasi & Elemen Pembeda
