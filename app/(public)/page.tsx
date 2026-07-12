@@ -3,11 +3,12 @@ import { Reveal } from './_components/Reveal'
 import { CountUp } from './_components/CountUp'
 import { HeroVisual } from './_components/HeroVisual'
 import { CtaIllustration } from './_components/CtaIllustration'
+import { FaqItem } from './_components/FaqItem'
 
 /* -------------------------------------------------------------------------
  * Landing page publik E-Jatim TrustLink.
- * Semua angka statistik bersumber dari PRD.md / proposal EJAVEC — jangan
- * menambah angka baru di sini tanpa sumber.
+ * Semua angka statistik bersumber dari PRD.md / proposal. Jangan menambah
+ * angka baru tanpa sumber.
  * ---------------------------------------------------------------------- */
 
 const stats = [
@@ -16,44 +17,44 @@ const stats = [
     prefix: 'Rp',
     suffix: ' T',
     label: 'Credit gap UMKM Indonesia',
-    detail: 'kebutuhan pembiayaan UMKM yang belum terlayani lembaga keuangan formal',
+    detail: 'Kebutuhan pembiayaan UMKM yang belum terlayani lembaga keuangan formal.',
   },
   {
     value: 23,
     suffix: '%',
     label: 'UMKM dengan akses kredit formal',
-    detail: 'sebagian besar usaha kecil belum tersentuh pembiayaan perbankan',
+    detail: 'Sebagian besar usaha kecil belum tersentuh pembiayaan perbankan.',
   },
   {
     value: 10,
     suffix: '%',
     label: 'Melek keuangan digital',
-    detail: 'pencatatan keuangan rapi masih jadi barang langka di lapangan',
+    detail: 'Pencatatan keuangan yang rapi masih jarang ditemui di lapangan.',
   },
   {
     value: 60,
     suffix: '%',
     label: 'Pengajuan kredit ditolak',
-    detail: 'karena bukti keuangan tidak cukup — bukan karena usahanya tidak layak',
+    detail: 'Ditolak karena bukti keuangannya tidak cukup, bukan karena usahanya tidak layak.',
   },
 ]
 
 const steps = [
   {
     title: 'Beri izin sekali',
-    desc: 'UMKM memberi persetujuan (consent) eksplisit agar data transaksi digitalnya — QRIS, e-wallet, marketplace — boleh dibaca sistem. Tanpa izin, tidak ada data yang diambil.',
+    desc: 'Anda memberi persetujuan agar data transaksi digital usaha Anda boleh dibaca sistem. Koneksinya memakai standar terbuka yang resmi seperti Open Banking, jadi Anda tidak perlu membagikan kata sandi apa pun. Tanpa izin Anda, tidak ada data yang diambil.',
   },
   {
     title: 'Pembukuan jalan sendiri',
-    desc: 'Setiap transaksi otomatis tercatat dan dikelompokkan ke pos keuangan sesuai standar akuntansi UMKM (SAK EMKM). Tidak perlu mengetik ulang atau paham istilah akuntansi.',
+    desc: 'Setiap transaksi otomatis tercatat dan dikelompokkan ke pos keuangan sesuai standar akuntansi UMKM (SAK EMKM). Anda tidak perlu mengetik ulang atau memahami istilah akuntansi.',
   },
   {
     title: 'Skor kredit terbentuk',
-    desc: 'Dari catatan yang rapi, sistem menyusun laporan keuangan dan skor kredit alternatif — potret kesehatan usaha yang selama ini tidak terlihat bank.',
+    desc: 'Dari catatan yang rapi, sistem menyusun laporan keuangan dan skor kredit alternatif. Inilah potret kesehatan usaha yang selama ini tidak terlihat oleh bank.',
   },
   {
     title: 'Ajukan KUR dengan bukti',
-    desc: 'Laporan dan skor bisa dibagikan ke bank sebagai bukti kelayakan. Analis kredit membaca data yang sudah rapi — verifikasi yang biasanya 14–30 hari bisa dipangkas menjadi hitungan hari.',
+    desc: 'Laporan dan skor bisa Anda bagikan ke bank sebagai bukti kelayakan. Karena analis membaca data yang sudah rapi, verifikasi yang biasanya memakan 14 sampai 30 hari bisa dipangkas menjadi hitungan hari.',
   },
 ]
 
@@ -61,7 +62,7 @@ const features = [
   {
     title: 'Pembukuan Otomatis',
     benefit: 'Jualan seperti biasa, buku kas beres sendiri.',
-    desc: 'Transaksi digital harian langsung menjadi catatan keuangan berstandar akuntansi UMKM — tanpa input manual, tanpa perlu lulusan akuntansi.',
+    desc: 'Transaksi digital harian langsung menjadi catatan keuangan berstandar akuntansi UMKM. Tidak ada input manual dan tidak perlu latar belakang akuntansi.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="h-6 w-6 stroke-blue-900">
         <rect x="4" y="3" width="16" height="18" rx="2" />
@@ -73,7 +74,7 @@ const features = [
   {
     title: 'Skor Kredit Alternatif',
     benefit: 'Kelayakan usaha yang akhirnya bisa dibuktikan.',
-    desc: 'Pertumbuhan omzet, kestabilan arus kas, dan reputasi usaha diolah menjadi satu skor sederhana — Hijau, Kuning, atau Merah — yang mudah dibaca bank.',
+    desc: 'Pertumbuhan omzet, kestabilan arus kas, dan reputasi usaha diolah menjadi satu skor sederhana berwarna Hijau, Kuning, atau Merah yang mudah dibaca bank.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="h-6 w-6 stroke-blue-900">
         <path d="M4 17a8 8 0 0 1 16 0" strokeLinecap="round" />
@@ -85,7 +86,7 @@ const features = [
   {
     title: 'Skor Reputasi Usaha',
     benefit: 'Ulasan pelanggan ikut jadi modal.',
-    desc: 'Penilaian pembeli di platform digital dianalisis menjadi skor reputasi — pelengkap laporan keuangan yang menunjukkan usaha Anda dipercaya pelanggan.',
+    desc: 'Penilaian pembeli di platform digital dianalisis menjadi skor reputasi. Ini melengkapi laporan keuangan dengan bukti bahwa usaha Anda dipercaya pelanggan.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="h-6 w-6 stroke-blue-900">
         <path d="M12 4.5 14 9l4.8.4-3.6 3.2 1.1 4.7L12 14.8l-4.3 2.5 1.1-4.7L5.2 9.4 10 9z" strokeLinejoin="round" />
@@ -96,7 +97,7 @@ const features = [
   {
     title: 'Rapor Sehat Keuangan',
     benefit: 'Kebiasaan kecil, dampak besar.',
-    desc: 'Tantangan 30 hari dan progres mingguan membantu membangun disiplin keuangan sedikit demi sedikit — seperti rapor, tapi untuk kesehatan usaha.',
+    desc: 'Tantangan 30 hari dan progres mingguan membantu Anda membangun disiplin keuangan sedikit demi sedikit, seperti rapor untuk kesehatan usaha.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="h-6 w-6 stroke-blue-900">
         <path d="M8 4h8a2 2 0 0 1 2 2v13a1 1 0 0 1-1.5.9L12 17.5 7.5 19.9A1 1 0 0 1 6 19V6a2 2 0 0 1 2-2Z" strokeLinejoin="round" />
@@ -109,38 +110,42 @@ const features = [
 const trustPoints = [
   {
     title: 'Berbasis izin, bukan diam-diam',
-    desc: 'Data transaksi hanya diakses setelah Anda memberi persetujuan eksplisit, dan izin itu bisa dicabut kapan saja.',
+    desc: 'Data transaksi hanya diakses setelah Anda memberi persetujuan. Izin ini bisa Anda cabut kapan saja.',
   },
   {
     title: 'Data terenkripsi',
-    desc: 'Data usaha Anda disimpan terenkripsi dan hanya dipakai untuk menyusun laporan serta skor milik Anda sendiri.',
+    desc: 'Data usaha Anda disimpan dalam bentuk terenkripsi dan hanya dipakai untuk menyusun laporan serta skor milik Anda sendiri.',
   },
   {
     title: 'Selaras UU PDP',
-    desc: 'Dirancang mengikuti UU Pelindungan Data Pribadi No. 27/2022 sejak awal — bukan ditambal belakangan.',
+    desc: 'Dirancang mengikuti UU Pelindungan Data Pribadi No. 27 Tahun 2022 sejak awal, bukan ditambahkan belakangan.',
   },
 ]
 
 const faqs = [
   {
     q: 'Apakah saya perlu punya sistem akuntansi atau pembukuan sendiri?',
-    a: 'Tidak. Justru itu masalah yang kami selesaikan: pembukuan disusun otomatis dari data transaksi digital yang sudah ada (QRIS, e-wallet, marketplace). Anda cukup berjualan seperti biasa.',
+    a: 'Tidak. Justru itu masalah yang kami selesaikan. Pembukuan disusun otomatis dari data transaksi digital yang sudah ada, seperti QRIS, e-wallet, dan marketplace. Anda cukup berjualan seperti biasa.',
   },
   {
     q: 'Amankah data transaksi saya?',
-    a: 'Data hanya diambil setelah Anda memberi izin eksplisit, disimpan terenkripsi, dan hanya dipakai untuk menyusun laporan serta skor usaha Anda. Anda bisa mencabut izin kapan saja — sesuai UU Pelindungan Data Pribadi No. 27/2022.',
+    a: 'Data hanya diambil setelah Anda memberi izin, disimpan terenkripsi, dan hanya dipakai untuk menyusun laporan serta skor usaha Anda. Anda bisa mencabut izin kapan saja sesuai UU Pelindungan Data Pribadi No. 27 Tahun 2022.',
   },
   {
     q: 'Bagaimana bank melihat laporan saya?',
-    a: 'Bank tidak melihat transaksi mentah Anda satu per satu. Analis kredit membaca ringkasan yang sudah rapi: laporan keuangan standar (SAK EMKM), skor kredit alternatif, dan skor reputasi — cukup untuk menilai kelayakan tanpa membongkar detail dapur usaha Anda.',
+    a: 'Bank tidak melihat transaksi mentah Anda satu per satu. Analis kredit membaca ringkasan yang sudah rapi, yaitu laporan keuangan standar (SAK EMKM), skor kredit alternatif, dan skor reputasi. Itu cukup untuk menilai kelayakan tanpa membongkar detail dapur usaha Anda.',
   },
   {
-    q: 'Saya lebih banyak terima uang tunai. Apakah tetap bisa pakai?',
-    a: 'Skor akan paling akurat untuk transaksi digital. Transaksi tunai belum terekam otomatis di tahap ini — ini juga alasan kami mendorong UMKM mulai menerima pembayaran QRIS: setiap transaksi digital adalah satu baris bukti kelayakan kredit.',
+    q: 'Saya lebih banyak menerima uang tunai. Apakah tetap bisa pakai?',
+    a: 'Skor paling akurat untuk transaksi digital. Transaksi tunai belum terekam otomatis pada tahap ini. Inilah salah satu alasan kami mendorong UMKM menerima pembayaran QRIS, karena setiap transaksi digital menjadi satu baris bukti kelayakan kredit.',
+  },
+  {
+    q: 'Berapa biaya untuk memakai layanan ini?',
+    a: 'Saat ini layanan gratis untuk digunakan. E-Jatim TrustLink dikembangkan untuk mendorong inklusi keuangan UMKM, bukan sebagai produk komersial.',
   },
   {
     q: 'Apakah skor ini menjamin pengajuan KUR saya disetujui?',
-    a: 'Tidak — keputusan kredit tetap sepenuhnya di tangan bank. Yang kami pastikan: usaha Anda dinilai dari bukti yang lengkap dan rapi, bukan ditolak hanya karena tidak punya laporan keuangan.',
+    a: 'Tidak. Keputusan kredit sepenuhnya ada di tangan bank. Yang kami pastikan adalah usaha Anda dinilai dari bukti yang lengkap dan rapi, bukan ditolak hanya karena tidak punya laporan keuangan.',
   },
 ]
 
@@ -148,21 +153,21 @@ export default function LandingPage() {
   return (
     <div className="overflow-x-clip">
       {/* ============================== HERO ============================== */}
-      <section className="relative border-b border-slate-100">
-        {/* aksen latar: gradasi navy lembut di pojok, asimetris */}
+      <section className="relative overflow-hidden bg-blue-950">
+        {/* aksen latar: cahaya emerald lembut di pojok, asimetris */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-24 right-[-10%] h-72 w-72 rounded-full bg-blue-900/5 blur-3xl"
+          className="pointer-events-none absolute -top-24 right-[-10%] h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl"
         />
-        <div className="mx-auto grid max-w-5xl gap-12 px-4 pb-20 pt-14 sm:px-8 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:gap-8 lg:pt-20">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-[-30%] left-[-10%] h-72 w-72 rounded-full bg-blue-500/10 blur-3xl"
+        />
+        <div className="relative mx-auto grid max-w-5xl gap-12 px-4 pb-24 pt-16 sm:px-8 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:gap-8 lg:pt-20">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Purwarupa riset · EJAVEC 2026 — Bank Indonesia
-            </p>
-            <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-blue-900 sm:text-5xl">
+            <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
               Jejak digital{' '}
-              <span className="relative inline-block text-emerald-600">
+              <span className="relative inline-block text-emerald-400">
                 terpercaya
                 <svg
                   viewBox="0 0 120 8"
@@ -181,21 +186,21 @@ export default function LandingPage() {
               </span>{' '}
               untuk UMKM Jawa Timur
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-500 sm:text-lg">
-              Dari data transaksi harian UMKM — QRIS, e-wallet, marketplace —
-              menjadi laporan keuangan rapi dan skor kredit yang bisa dibaca
-              bank. Tanpa pembukuan manual, tanpa istilah rumit.
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-blue-100 sm:text-lg">
+              Ubah data transaksi harian usaha Anda dari QRIS, e-wallet, dan
+              marketplace menjadi laporan keuangan rapi dan skor kredit yang bisa
+              dibaca bank. Tanpa pembukuan manual dan tanpa istilah rumit.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/masuk"
-                className="inline-flex h-12 items-center justify-center rounded-xl bg-blue-900 px-6 text-base font-semibold text-white transition-colors hover:bg-blue-800"
+                className="inline-flex h-12 items-center justify-center rounded-xl bg-emerald-400 px-6 text-base font-semibold text-blue-950 transition-colors hover:bg-emerald-300"
               >
                 Masuk
               </Link>
               <a
                 href="#cara-kerja"
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-200 px-6 text-base font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                className="inline-flex h-12 items-center justify-center rounded-xl border border-white/25 px-6 text-base font-semibold text-white transition-colors hover:border-white/50 hover:bg-white/10"
               >
                 Lihat cara kerjanya
               </a>
@@ -211,7 +216,7 @@ export default function LandingPage() {
       </section>
 
       {/* ======================== MASALAH & DATA ========================= */}
-      <section className="bg-slate-50">
+      <section className="bg-white">
         <div className="mx-auto max-w-5xl px-4 py-16 sm:px-8 sm:py-20">
           <Reveal className="max-w-2xl">
             <h2 className="text-2xl font-bold tracking-tight text-blue-900 sm:text-3xl">
@@ -220,9 +225,10 @@ export default function LandingPage() {
             </h2>
             <p className="mt-4 leading-relaxed text-slate-500">
               Jutaan warung, kios, dan usaha rumahan bertransaksi digital setiap
-              hari — jejaknya nyata, tapi tidak pernah menjadi laporan keuangan
-              yang bisa dibaca bank. Akibatnya, asimetri informasi: usaha yang
-              sehat pun terlihat &ldquo;kosong&rdquo; di mata penilai kredit.
+              hari. Jejaknya nyata, tapi tidak pernah menjadi laporan keuangan
+              yang bisa dibaca bank. Akibatnya muncul asimetri informasi, dan
+              usaha yang sehat pun terlihat &ldquo;kosong&rdquo; di mata penilai
+              kredit.
             </p>
           </Reveal>
 
@@ -242,15 +248,15 @@ export default function LandingPage() {
 
           <Reveal delayMs={150}>
             <p className="mt-6 text-sm text-slate-400">
-              Sumber: proposal riset E-Jatim TrustLink (EJAVEC 2026), diolah dari
-              data Bank Indonesia, OJK, dan BPS.
+              Sumber: proposal riset E-Jatim TrustLink, diolah dari data Bank
+              Indonesia, OJK, dan BPS.
             </p>
           </Reveal>
         </div>
       </section>
 
       {/* =========================== CARA KERJA =========================== */}
-      <section id="cara-kerja" className="scroll-mt-16">
+      <section id="cara-kerja" className="scroll-mt-16 bg-white">
         <div className="mx-auto max-w-5xl px-4 py-16 sm:px-8 sm:py-20">
           <Reveal className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
@@ -261,8 +267,8 @@ export default function LandingPage() {
             </h2>
             <p className="mt-4 leading-relaxed text-slate-500">
               Bayangkan Bu Sari, penjual nasi campur di Surabaya. Pembelinya
-              sudah terbiasa membayar lewat QRIS — tapi ia tak pernah sempat
-              membukukan apa pun. Begini jalannya:
+              sudah terbiasa membayar lewat QRIS, tapi ia tidak pernah sempat
+              membukukan apa pun. Begini jalannya.
             </p>
           </Reveal>
 
@@ -283,14 +289,14 @@ export default function LandingPage() {
       </section>
 
       {/* ======================== FITUR & MANFAAT ========================= */}
-      <section className="border-y border-slate-100 bg-slate-50">
+      <section id="fitur" className="scroll-mt-16 border-y border-slate-100 bg-slate-50">
         <div className="mx-auto max-w-5xl px-4 py-16 sm:px-8 sm:py-20">
           <Reveal className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
               Fitur &amp; manfaat
             </p>
             <h2 className="mt-2 text-2xl font-bold tracking-tight text-blue-900 sm:text-3xl">
-              Yang Anda dapatkan — tanpa jadi akuntan
+              Yang Anda dapatkan tanpa perlu jadi akuntan
             </h2>
           </Reveal>
 
@@ -312,7 +318,7 @@ export default function LandingPage() {
       </section>
 
       {/* ==================== KEPERCAYAAN & KEPATUHAN ===================== */}
-      <section>
+      <section className="bg-white">
         <div className="mx-auto max-w-5xl px-4 py-16 sm:px-8 sm:py-20">
           <Reveal className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600">
@@ -373,21 +379,7 @@ export default function LandingPage() {
           <div className="mt-8 space-y-3">
             {faqs.map((f, i) => (
               <Reveal key={f.q} delayMs={i * 60}>
-                <details className="group rounded-2xl border border-slate-200 bg-white open:shadow-sm">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-sm font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
-                    {f.q}
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      strokeWidth="2"
-                      aria-hidden="true"
-                      className="h-4 w-4 shrink-0 stroke-slate-400 transition-transform group-open:rotate-180 motion-reduce:transition-none"
-                    >
-                      <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </summary>
-                  <p className="px-5 pb-5 text-sm leading-relaxed text-slate-500">{f.a}</p>
-                </details>
+                <FaqItem question={f.q} answer={f.a} />
               </Reveal>
             ))}
           </div>
@@ -395,7 +387,7 @@ export default function LandingPage() {
       </section>
 
       {/* ========================== CTA PENUTUP =========================== */}
-      <section>
+      <section className="bg-white">
         <div className="mx-auto max-w-5xl px-4 py-16 sm:px-8 sm:py-20">
           <Reveal>
             <div className="grid items-center gap-10 overflow-hidden rounded-3xl bg-blue-950 px-6 py-12 sm:px-10 lg:grid-cols-[1.1fr_1fr] lg:gap-6 lg:px-14">
@@ -408,7 +400,7 @@ export default function LandingPage() {
                 <p className="mt-4 max-w-md leading-relaxed text-blue-200">
                   Setiap pembayaran digital yang Anda terima adalah satu baris
                   bukti bahwa usaha Anda layak. Mulai bangun jejak digital
-                  terpercaya untuk UMKM Anda.
+                  terpercaya untuk usaha Anda hari ini.
                 </p>
                 <Link
                   href="/masuk"
@@ -416,6 +408,9 @@ export default function LandingPage() {
                 >
                   Mulai sekarang
                 </Link>
+                <p className="mt-3 text-sm text-blue-300">
+                  Gratis digunakan. Tanpa kata sandi dan tanpa biaya tersembunyi.
+                </p>
               </div>
               <div className="mx-auto w-full max-w-sm lg:mx-0">
                 <CtaIllustration />

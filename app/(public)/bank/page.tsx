@@ -21,9 +21,9 @@ export default function BankPlaceholderPage() {
         Fitur ini sedang dibangun
       </h1>
       <p className="mt-3 max-w-md leading-relaxed text-slate-500">
-        Tampilan analis kredit — membaca laporan keuangan, skor kredit
-        alternatif, dan skor reputasi UMKM, lalu memberi keputusan — sedang
-        disiapkan untuk tahap purwarupa berikutnya.
+        Tampilan analis kredit untuk membaca laporan keuangan, skor kredit
+        alternatif, dan skor reputasi UMKM, lalu memberi keputusan. Bagian ini
+        sedang kami siapkan.
       </p>
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Link

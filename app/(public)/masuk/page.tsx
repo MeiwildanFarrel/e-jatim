@@ -3,13 +3,13 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Masuk',
-  description: 'Pilih peran untuk mencoba purwarupa E-Jatim TrustLink: UMKM atau Analis Kredit Bank.',
+  description: 'Pilih peran untuk mencoba E-Jatim TrustLink sebagai UMKM atau sebagai Analis Kredit Bank.',
 }
 
 /*
- * Halaman masuk MOCK (keputusan PoC): tanpa form password, cukup pilih peran.
+ * Halaman masuk mock (keputusan PoC): tanpa form password, cukup pilih peran.
  * - UMKM → /dashboard (laporan keuangan Bu Sari, sudah jalan)
- * - Bank → /bank (placeholder — dashboard analis kredit = F6, belum dibangun)
+ * - Bank → /bank (placeholder; dashboard analis kredit = F6, belum dibangun)
  */
 export default function MasukPage() {
   return (
@@ -17,8 +17,7 @@ export default function MasukPage() {
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight text-blue-900">Masuk</h1>
         <p className="mx-auto mt-3 max-w-md text-slate-500">
-          Ini purwarupa untuk demo — pilih peran untuk melihat sistem dari dua
-          sisi, tanpa kata sandi.
+          Pilih peran untuk melihat sistem dari dua sisi. Tidak perlu kata sandi.
         </p>
       </div>
 
@@ -37,8 +36,8 @@ export default function MasukPage() {
           </div>
           <h2 className="mt-4 text-lg font-bold text-slate-800">Masuk sebagai UMKM</h2>
           <p className="mt-1 flex-1 text-sm leading-relaxed text-slate-500">
-            Lihat laporan keuangan yang tersusun otomatis dari transaksi harian —
-            sudut pandang pemilik usaha seperti Bu Sari.
+            Lihat laporan keuangan yang tersusun otomatis dari transaksi harian,
+            dari sudut pandang pemilik usaha seperti Bu Sari.
           </p>
           <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-emerald-600">
             Buka dashboard UMKM
@@ -71,7 +70,7 @@ export default function MasukPage() {
       </div>
 
       <p className="mt-8 text-center text-xs text-slate-400">
-        Mode demo PoC — tidak ada autentikasi sungguhan; tidak ada data pribadi
+        Mode demo. Tidak ada autentikasi sungguhan dan tidak ada data pribadi
         yang diminta di halaman ini.
       </p>
     </div>

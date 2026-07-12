@@ -14,11 +14,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "E-Jatim TrustLink — Jejak Digital Terpercaya untuk UMKM Jawa Timur",
+    default: "E-Jatim TrustLink · Jejak Digital Terpercaya untuk UMKM Jawa Timur",
     template: "%s · E-Jatim TrustLink",
   },
   description:
-    "Dari data transaksi harian UMKM (QRIS, e-wallet, marketplace) menjadi laporan keuangan otomatis dan skor kredit alternatif yang bisa dibaca bank.",
+    "Ubah data transaksi harian UMKM dari QRIS, e-wallet, dan marketplace menjadi laporan keuangan otomatis dan skor kredit alternatif yang bisa dibaca bank.",
 };
 
 export default function RootLayout({

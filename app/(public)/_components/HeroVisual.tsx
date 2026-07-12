@@ -50,7 +50,7 @@ export const HeroVisual = () => (
       </ul>
 
       <p className="mt-3 border-t border-slate-100 pt-3 text-[11px] font-medium text-slate-500">
-        Debit = Kredit <span className="text-emerald-600">✓ seimbang</span> — siap dibaca bank
+        Debit = Kredit <span className="text-emerald-600">✓ seimbang</span>, siap dibaca bank
       </p>
     </div>
 

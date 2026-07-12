@@ -3,32 +3,32 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Kebijakan Privasi',
   description:
-    'Ringkasan kebijakan privasi purwarupa E-Jatim TrustLink: data apa yang diproses, dasar hukumnya, dan hak Anda.',
+    'Ringkasan kebijakan privasi E-Jatim TrustLink: data apa yang diproses, dasar hukumnya, dan hak Anda.',
 }
 
 const sections = [
   {
     title: 'Data apa yang kami proses?',
     body: [
-      'Data transaksi digital usaha Anda (nominal, tanggal, deskripsi, dan sumber transaksi seperti QRIS/e-wallet/marketplace) — hanya setelah Anda memberikan persetujuan eksplisit.',
-      'Data profil usaha dasar: nama usaha, nama pemilik, kategori usaha, dan kota/provinsi.',
+      'Data transaksi digital usaha Anda yang mencakup nominal, tanggal, deskripsi, dan sumber transaksi seperti QRIS, e-wallet, atau marketplace. Data ini hanya diambil setelah Anda memberikan persetujuan.',
+      'Data profil usaha dasar, yaitu nama usaha, nama pemilik, kategori usaha, serta kota dan provinsi.',
       'Ulasan publik pelanggan terhadap usaha Anda di platform digital, untuk menyusun skor reputasi.',
     ],
   },
   {
     title: 'Dasar hukum pemrosesan',
     body: [
-      'Pemrosesan dilakukan berdasarkan persetujuan (consent) eksplisit Anda, sesuai Pasal 20 ayat (2) huruf a UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi (UU PDP).',
-      'Kami tidak memakai dalih "kepentingan sah" (legitimate interest) untuk mengambil data transaksi Anda — tanpa persetujuan, tidak ada data yang diproses.',
-      'Setiap persetujuan dicatat (jenis, waktu diberikan, waktu dicabut) sebagai jejak audit.',
+      'Pemrosesan dilakukan berdasarkan persetujuan eksplisit Anda, sesuai Pasal 20 ayat (2) huruf a UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi (UU PDP).',
+      'Kami tidak memakai dalih "kepentingan sah" (legitimate interest) untuk mengambil data transaksi Anda. Tanpa persetujuan, tidak ada data yang diproses.',
+      'Setiap persetujuan dicatat, mencakup jenisnya serta waktu diberikan dan dicabut, sebagai jejak audit.',
     ],
   },
   {
     title: 'Untuk apa data dipakai?',
     body: [
-      'Menyusun pembukuan otomatis dan laporan keuangan usaha Anda (standar SAK EMKM).',
+      'Menyusun pembukuan otomatis dan laporan keuangan usaha Anda dengan standar SAK EMKM.',
       'Menghitung skor kredit alternatif dan skor reputasi usaha Anda.',
-      'Data Anda tidak dijual dan tidak dibagikan ke pihak lain — laporan dan skor hanya diteruskan ke bank apabila Anda sendiri yang mengajukan pembiayaan.',
+      'Data Anda tidak dijual dan tidak dibagikan ke pihak lain. Laporan dan skor hanya diteruskan ke bank apabila Anda sendiri yang mengajukan pembiayaan.',
     ],
   },
   {
@@ -36,7 +36,7 @@ const sections = [
     body: [
       'Mengakses dan melihat data serta laporan yang dihasilkan dari data Anda.',
       'Meminta perbaikan data yang keliru.',
-      'Mencabut persetujuan kapan saja — pemrosesan data baru berhenti sejak pencabutan.',
+      'Mencabut persetujuan kapan saja. Pemrosesan data baru berhenti sejak pencabutan.',
       'Meminta penghapusan data Anda dari sistem.',
     ],
   },
@@ -54,9 +54,8 @@ export default function KebijakanPrivasiPage() {
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-8 sm:py-20">
       <h1 className="text-3xl font-bold tracking-tight text-blue-900">Kebijakan Privasi</h1>
       <p className="mt-3 leading-relaxed text-slate-500">
-        Ringkasan cara purwarupa E-Jatim TrustLink memperlakukan data — ditulis
-        singkat supaya benar-benar terbaca, bukan disembunyikan di balik bahasa
-        hukum.
+        Ringkasan cara E-Jatim TrustLink memperlakukan data Anda. Ditulis singkat
+        supaya benar-benar terbaca, bukan disembunyikan di balik bahasa hukum.
       </p>
 
       <div className="mt-10 space-y-8">
@@ -76,10 +75,11 @@ export default function KebijakanPrivasiPage() {
       </div>
 
       <p className="mt-12 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-relaxed text-slate-500">
-        Dokumen ini adalah ringkasan representatif untuk purwarupa riset
-        (EJAVEC 2026), bukan dokumen legal final. Data yang dipakai dalam demo
-        adalah data simulasi. Pertanyaan: halo@ejatim-trustlink.example
-        (placeholder). Pembaruan terakhir: Juli 2026.
+        Dokumen ini adalah ringkasan yang mudah dibaca, bukan dokumen legal
+        final. E-Jatim TrustLink saat ini berupa purwarupa, dan sebagian data
+        dalam demo merupakan data simulasi. Pertanyaan bisa dikirim ke
+        halo@ejatim-trustlink.example (placeholder). Pembaruan terakhir: Juli
+        2026.
       </p>
     </div>
   )
