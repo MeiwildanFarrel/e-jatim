@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 /*
  * Halaman masuk mock (keputusan PoC): tanpa form password, cukup pilih peran.
- * - UMKM → /dashboard (laporan keuangan Bu Sari, sudah jalan)
+ * - UMKM → /consent (layar izin akses, baru Minggu 3) → /dashboard
  * - Bank → /bank (placeholder; dashboard analis kredit = F6, belum dibangun)
  */
 export default function MasukPage() {
@@ -23,7 +23,7 @@ export default function MasukPage() {
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
         <Link
-          href="/dashboard"
+          href="/consent"
           className="group flex flex-col rounded-2xl border-2 border-slate-200 bg-white p-6 transition-all hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-100 sm:p-8"
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50">

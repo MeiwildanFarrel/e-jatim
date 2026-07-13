@@ -31,11 +31,18 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 - **Dashboard** (`app/dashboard/page.tsx`) menampilkan 3 laporan dasar SAK EMKM (Laba Rugi, Posisi Keuangan/Neraca, Catatan) diturunkan dari Trial Balance — logic murni TypeScript di `src/lib/reports/` (`trialBalance.ts`, `financialStatements.ts`, `notes.ts`), bukan AI. Diverifikasi live (bukan cuma laporan lama): render benar, data real-time dari Supabase, cocok persis dengan query independen.
 - Neraca menyertakan indikator eksplisit Aset = Liabilitas + Modal (warning jelas kalau tidak seimbang), Catatan secara jujur melaporkan jumlah transaksi `needs_tier3` yang belum tercermin di laporan.
 
-### F3. Alternative Credit Scoring (ACS) — 🔜 belum dibangun (endpoint hitung skor masih backlog)
+### F3. Alternative Credit Scoring (ACS) — ✅ Growth/Stability/Risk dihitung dari ledger real (13 Juli), Reputation masih placeholder
 - `Score = w₁·Growth + w₂·Stability + w₃·Reputation − w₄·RiskFactor`.
-- Model: Random Forest + XGBoost; evaluasi AUC-ROC, F1, Gini, SHAP.
-- Output: speedometer Hijau/Kuning/Merah (mis. "Hijau 72/100").
-- ⚠️ **Temuan 12 Juli**: tabel `credit_scores` sudah punya **1 baris data dummy** untuk Bu Sari (`score: 72, score_category: "Hijau", model_version: "v0.1-dummy"`) — ini kemungkinan besar seed manual/placeholder, **BUKAN** hasil pipeline ACS sungguhan (pipeline-nya sendiri belum dikerjakan Anggota B). Boleh dipakai sebagai placeholder untuk demo UI Minggu 3 (speedometer), **tapi WAJIB ditandai jelas di kode & UI sebagai data dummy** (mis. cek `model_version` mengandung `"dummy"` → tampilkan badge "Contoh/Placeholder") supaya tidak keliru dikira skor ACS asli saat demo/review.
+- ⚠️ **KEPUTUSAN TIM (12-13 Juli) — model ML Anggota B TIDAK dipakai untuk skor runtime Bu Sari.** Model itu dilatih di dataset publik (Kaggle Home Credit/LendingClub) dengan fitur yang tidak ada padanannya di data ledger UMKM kita — jadi tidak bisa langsung diterapkan ke satu baris data Bu Sari. Random Forest + XGBoost (evaluasi AUC-ROC/F1/Gini/SHAP) tetap jadi **bukti metodologi di paper** (menunjukkan due diligence benchmarking), **bukan** komponen yang menghasilkan angka di runtime PoC ini.
+- **Growth, Stability, Risk** kini dihitung deterministik (TypeScript murni, bukan AI — lihat `src/lib/scoring/acsCalculator.ts` + `creditScoreService.ts`) dari `ledger_entries` real Bu Sari, per bulan kalender yang **sudah lengkap** (bulan berjalan dikeluarkan supaya tidak bias oleh jumlah hari parsial):
+  - Growth: `clamp(50 + growthPct, 0, 100)`, growthPct = (pendapatan bulan terakhir − bulan pertama) / bulan pertama.
+  - Stability: `clamp(100 − CV×100, 0, 100)`, CV = koefisien variasi pendapatan antar-bulan.
+  - Risk: `clamp(totalBeban/totalPendapatan × 100, 0, 100)` — proxy kasar rasio beban/pendapatan, BUKAN model risiko tervalidasi statistik.
+- **Reputation**: hardcode 50 (netral), aktif di formula **hanya jika** UMKM menyetujui Toggle B (`marketplace_review_access`) di layar consent (lihat F6a baru di bawah). Kalau tidak disetujui, komponen dikeluarkan dan bobotnya didistribusikan ulang ke 3 komponen lain (bukan dihukum jadi 0) — lihat `combineAcsScore()`.
+- Bobot `w1=0.35 (Growth), w2=0.25 (Stability), w3=0.20 (Reputation), w4=0.20 (Risk)` — **TENTATIF**, belum ada rujukan pasti dari Anggota B; akan diganti begitu ada hasil benchmarking model ML asli.
+- Output: speedometer Hijau (≥70) / Kuning (40-69) / Merah (<40) di `app/dashboard/_components/SpeedometerCard.tsx`.
+- ✅ **Verifikasi live (13 Juli)**: skor Bu Sari dihitung ulang dari data ledger sungguhan menghasilkan **58/100 (Kuning)** saat Toggle B tidak disetujui (Growth 71.6, Stability 91.9, Risk 9.5, Reputation tidak aktif), dan **56/100 (Kuning)** saat Toggle B disetujui (Reputation=50 ikut dihitung). Baris dummy lama (`model_version: "v0.1-dummy"`, score 72) sudah **diganti** — `credit_scores` sekarang berisi baris nyata `model_version: "v0.5-ledger-partial"`.
+- Growth real (+21.6%, April→Juni) sedikit berbeda dari angka +18,0% yang dikonfirmasi 12 Juli di §5 — lihat catatan di §5, ini pertambahan data alami, bukan revisi metodologi.
 
 ### F4. Reputation Score (NLP)
 - Analisis sentimen ulasan marketplace (Word2Vec + Random Forest — expertise Pak Sena).
@@ -44,8 +51,13 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 ### F5. Gamifikasi Rapor Sehat Keuangan
 - Speedometer visual, tantangan 30 hari, notifikasi progress mingguan (basis Self-Determination Theory).
 
-### F6. Alur Verifikasi Sisi Bank 🔜 (skema `loan_applications` baru diverifikasi 12 Juli — lihat §4.1, BERBEDA SIGNIFIKAN dari dugaan awal)
-- View sederhana untuk "Analis Kredit" (representasi peran Pak Arief, lihat §5): buka profil UMKM → lihat 3 laporan keuangan + skor ACS (placeholder, lihat F3) + Reputation Score → aksi approve/reject.
+### F6a. Layar Consent ("Izinkan Akses") — ✅ SELESAI (13 Juli, bagian resmi alur sejak sekarang)
+- Langkah baru **wajib** di antara `/masuk` (pilih peran UMKM) dan `/dashboard` — sebelumnya alur langsung `/masuk` → `/dashboard` tanpa consent sama sekali, ini gap yang sudah ditutup.
+- **2 toggle terpisah** (bukan satu tombol "Izinkan Akses" umum — syarat hukum eksplisit dari Anggota C): Toggle A "Akses Data Transaksi" (`consent_type = 'transaction_data_access'`, WAJIB untuk fitur inti) dan Toggle B "Akses Ulasan Marketplace" (`consent_type = 'marketplace_review_access'`, opsional, hanya mempengaruhi komponen Reputation di F3). Keduanya default **tidak tercentang**, independen satu sama lain.
+- Submit menulis ke `consent_records` (skema sudah eksis, dipakai pertama kali sesi ini) lalu langsung memicu hitung ulang skor ACS (`src/lib/scoring/creditScoreService.ts`) — implementasi di `app/consent/`.
+
+### F6. Alur Verifikasi Sisi Bank 🔜 (skema `loan_applications` diverifikasi 12 Juli — lihat §4.1; framing regulasi DIKOREKSI 13 Juli, lihat §6)
+- View sederhana untuk "Analis Kredit" (representasi peran Pak Arief, lihat §5 — **user INTERNAL Bank Jatim**, bukan pihak luar yang menerima laporan dari platform umum): buka profil UMKM → lihat 3 laporan keuangan + skor ACS (kini dihitung dari ledger real, lihat F3) + Reputation Score → aksi approve/reject.
 - Mengubah `status` di `loan_applications`, dengan selisih `created_at`→`reviewed_at` (⚠️ **bukan** `submitted_at`→`decided_at` seperti draft awal — kolom itu tidak eksis, lihat §4.1) mensimulasikan verifikasi cepat (~3 hari) sebagai kontras terhadap proses manual 14–30 hari yang jadi argumen masalah di paper.
 - Tabel punya kolom tambahan yang belum termanfaatkan di desain awal: `credit_score_id` (FK ke `credit_scores` — pakai ini untuk link ke skor yang direview), `bank_analyst_id`, `decision_notes` (kolom untuk catatan keputusan Pak Arief — bisa dimanfaatkan untuk demo yang lebih kaya).
 - **Ini bukan fitur tambahan bebas** — ini prasyarat supaya skenario Pak Arief di Bab 3 bisa didemokan nyata, bukan cuma diceritakan.
@@ -59,7 +71,7 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 ## 3. OUT OF SCOPE (ditunda / bukan untuk PoC)
 
 - ❌ **Integrasi SNAP BI produksi** (butuh PJP berlisensi) → PoC pakai **mock API**.
-- ❌ **Menjadi PKA berlisensi** (POJK 29/2024 butuh modal Rp 5 M + lisensi OJK) → posisikan sebagai *middleware integrator*, jadi rekomendasi kebijakan.
+- ❌ **Menjadi PKA berlisensi** (POJK 29/2024 butuh modal Rp 5 M + lisensi OJK) → **(⚠️ KOREKSI 13 Juli, lihat §6)** framing lama "middleware integrator yang mengonsumsi output PKA berlisensi" sudah **dibatalkan tim** (Anggota C memvalidasi Pasal 56 POJK 29/2024) — posisi baru: instrumen internal 1 LJK mitra (Bank Jatim) pada fase pilot/PoC.
 - ❌ **OCR struk transaksi cash** → diakui sebagai limitasi jujur di paper (jadi argumen insentif adopsi QRIS). Konsekuensi teknis: Auto-Ledger tidak pernah perlu mengekstrak nominal dari teks bebas — nominal selalu terstruktur dari sumber data digital (lihat F1).
 - ❌ **Tier 3 LLM real** untuk volume besar → hanya edge case minimal.
 - ❌ **Migrasi Data Center Indonesia** (isu PP 71/2019) → roadmap produksi, bukan PoC.
@@ -90,7 +102,7 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 
 **`transactions`** — dugaan lama (belum diverifikasi eksplisit sesi ini, tapi terpakai konsisten di seluruh pipeline Tier1/2 tanpa error): `id`, `umkm_id`, `amount`, `description`, `source`, `transaction_date`, `classification_status`, `classification_tier`, `created_at`.
 
-**`credit_scores`** — ✅ **diverifikasi 12 Juli (sebelumnya dugaan, BERBEDA dari dugaan awal)**: `id`, `umkm_id`, `score`, `score_category` (⚠️ bukan `band`), `growth_score`, `stability_score`, `reputation_score`, `risk_factor_score` (⚠️ 4 kolom ini masing-masing berakhiran `_score`, beda dari dugaan awal yang lebih pendek), `calculated_at` (⚠️ bukan `computed_at`), `model_version` (kolom baru, tidak terduga — dipakai untuk menandai `"v0.1-dummy"` pada baris placeholder Bu Sari, lihat F3). Sudah ada 1 baris data (Bu Sari, dummy).
+**`credit_scores`** — ✅ **diverifikasi 12 Juli (sebelumnya dugaan, BERBEDA dari dugaan awal)**: `id`, `umkm_id`, `score`, `score_category` (⚠️ bukan `band`), `growth_score`, `stability_score`, `reputation_score`, `risk_factor_score` (⚠️ 4 kolom ini masing-masing berakhiran `_score`, beda dari dugaan awal yang lebih pendek), `calculated_at` (⚠️ bukan `computed_at`), `model_version`. **📌 Update 13 Juli**: baris dummy (`model_version: "v0.1-dummy"`, score 72) sudah **diganti** (delete+insert, bukan update in-place — lihat F3) oleh hasil hitung real dari `saveCreditScore()`, `model_version: "v0.5-ledger-partial"`. `reputation_score` bisa `NULL` (Toggle B belum disetujui) — beda dari sebelumnya yang selalu terisi angka dummy.
 
 **`loan_applications`** — ✅ **diverifikasi 12 Juli (sebelumnya dugaan, BERBEDA SIGNIFIKAN — baca sebelum coding F6)**: `id`, `umkm_id`, `credit_score_id` (FK ke `credit_scores`, kolom baru tidak terduga), `requested_amount` (⚠️ bukan `amount_requested`, urutan kata terbalik), `status`, `bank_analyst_id` (kolom baru), `reviewed_at` (⚠️ bukan `decided_at`), `decision_notes` (kolom baru), `created_at`. **⚠️ KOLOM `submitted_at` TIDAK ADA SAMA SEKALI** — draft awal PRD ini salah total mengasumsikan kolom itu ada; pakai `created_at` untuk keperluan yang sama. Tabel masih kosong (0 baris) — belum dipakai, sesuai status F6 yang memang belum dikerjakan.
 
@@ -102,11 +114,13 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 
 Bab 3 proposal berisi **dua** skenario stakeholder yang harus benar-benar bisa didemokan (bukan cuma narasi) — keduanya saling terhubung lewat data yang sama:
 
-- **Bu Sari** — Nasi Campur Bu Sari, Surabaya (`business_category`: Kuliner, `city`: Surabaya, `province`: Jawa Timur — data profil terverifikasi 12 Juli). Sisi **pemohon (UMKM)**: consent akses data → Auto-Ledger jalan dari data transaksi → skor ACS (target demo: Hijau 72/100 — **saat ini masih data dummy/placeholder di `credit_scores`, lihat F3**, growth arus kas +18% total dari bulan pertama ke bulan ketiga) → ajukan KUR.
+- **Bu Sari** — Nasi Campur Bu Sari, Surabaya (`business_category`: Kuliner, `city`: Surabaya, `province`: Jawa Timur — data profil terverifikasi 12 Juli). Sisi **pemohon (UMKM)**: consent akses data (layar `/consent`, lihat F6a) → Auto-Ledger jalan dari data transaksi → skor ACS **kini dihitung dari ledger real** (bukan dummy lagi, lihat F3) → ajukan KUR.
 
 > ⚠️ **Catatan seed 3 bulan Bu Sari (selesai 11 Juli)** — 917 transaksi baru (1 Apr–29 Jun 2026) via pipeline Tier 1, ditambah 9 transaksi lama + 4 dari mock-snap ingest. Total 994 transaksi, 939 classified (930 Tier 1 + 9 Tier 2), 55 needs_tier3, 1.878 ledger_entries, **balance** (`total_debit = total_kredit = Rp380.345.000` per 12 Juli, termasuk transaksi uji tambahan).
 >
-> **✅ KEPUTUSAN RESMI (12 Juli) — Growth = +18% total, bukan per bulan.** Angka final: April Rp96.005.000 → Juni(1-29) Rp113.279.000 = **+18,0% total** — data riil terverifikasi sistem, bukan target manual.
+> **✅ KEPUTUSAN RESMI (12 Juli) — Growth = +18% total, bukan per bulan.** Angka final saat itu: April Rp96.005.000 → Juni(1-29) Rp113.279.000 = **+18,0% total** — data riil terverifikasi sistem, bukan target manual.
+>
+> **📌 Update 13 Juli — perhitungan Growth otomatis (`src/lib/scoring/acsCalculator.ts`) memakai bulan Juni PENUH** (bukan 1-29) sebagai endpoint, dan ledger sudah bertambah beberapa transaksi lagi sejak snapshot 12 Juli (kemungkinan dari pengujian mock-snap ingest) — Juni sekarang Rp116.779.000, sehingga growth live = **April Rp96.005.000 → Juni Rp116.779.000 = +21,6% total**, sedikit lebih tinggi dari +18,0% yang dikonfirmasi 12 Juli. Ini pertambahan data alami, **bukan** perubahan metodologi — angka +18,0% tetap sah sebagai snapshot historis 12 Juli, tapi skor ACS yang tersimpan/ditampilkan di dashboard memakai angka live ini.
 
 - **Pak Arief** — Analis Kredit Bank Jatim Cabang Surabaya. ⚠️ **Bukan UMKM kedua** — dia stakeholder sisi **bank/penilai**. Kondisi "sebelum": verifikasi manual 14–30 hari, 60% pengajuan ditolak karena bukti keuangan tidak cukup. Kondisi "sesudah": dia buka laporan + skor yang sudah dihasilkan sistem dari data Bu Sari, lalu approve dalam ~3 hari (diukur dari `created_at`→`reviewed_at` di `loan_applications` — lihat koreksi skema §4.1). **Butuh view UI kedua** (lihat F6) yang mengonsumsi data yang sama dengan sisi Bu Sari.
 
@@ -117,6 +131,6 @@ Bab 3 proposal berisi **dua** skenario stakeholder yang harus benar-benar bisa d
 
 ## 6. Kepatuhan (ringkas — detail di paper)
 
-- **UU PDP 27/2022**: consent management (`consent_records`), enkripsi, dan **DPIA wajib** (Pasal 34 — ACS masuk kategori high-risk). *Compliance-by-Design.*
-- **POJK 29/2024**: posisikan sebagai konsumen output PKA berlisensi, bukan PKA.
-- **SNAP BI**: reference architecture; PoC pakai mock API.
+- **UU PDP 27/2022**: consent management (`consent_records`, kini terpakai sungguhan lewat layar `/consent`, lihat F6a) — 2 consent_type terpisah (`transaction_data_access` wajib, `marketplace_review_access` opsional), teks persetujuan eksplisit Pasal 20 ayat (2) huruf a, enkripsi, dan **DPIA wajib** (Pasal 34 — ACS masuk kategori high-risk). *Compliance-by-Design.*
+- **POJK 29/2024** — ⚠️ **KOREKSI 13 Juli (dibatalkan tim, validasi Anggota C):** framing lama "posisikan sebagai konsumen output PKA berlisensi, bukan PKA" **sudah dibatalkan** — Pasal 56 POJK 29/2024 tidak mendukung framing itu untuk sistem yang menghitung skornya sendiri secara internal (bukan mengonsumsi skor pihak lain berlisensi PKA, lihat F3). **Framing baru**: sistem diposisikan sebagai **instrumen internal 1 LJK mitra (Bank Jatim)** pada fase pilot/PoC — konsisten dengan **Rekomendasi Kebijakan 1 (Pilot Sandbox)** di proposal. Skenario Pak Arief (§5, F6) di-framing ulang sebagai **user internal Bank Jatim** yang memakai alat internal, bukan pihak luar independen yang menerima laporan dari platform umum. Disclaimer wajib Pasal 32 ayat (4) POJK 29/2024 ditampilkan di dashboard (lihat `SpeedometerCard.tsx`): skor bukan pemeringkatan PKA berizin OJK dan bukan keputusan kredit.
+- **SNAP BI**: reference architecture; PoC pakai mock API — status ini kini ditampilkan eksplisit ke user di layar `/consent` (bukan cuma di paper), teks persis mengacu PADG No. 23/15/PADG/2021.

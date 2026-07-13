@@ -1,14 +1,12 @@
 import { getTrialBalance } from '@/lib/reports/trialBalance'
 import { buildIncomeStatement, buildBalanceSheet } from '@/lib/reports/financialStatements'
 import { getReportNotes } from '@/lib/reports/notes'
+import { getCreditScore } from '@/lib/scoring/getCreditScore'
+import { DEFAULT_UMKM_ID } from '@/lib/constants'
 import { IncomeStatementCard } from './_components/IncomeStatementCard'
 import { BalanceSheetCard } from './_components/BalanceSheetCard'
 import { NotesCard } from './_components/NotesCard'
-
-// PoC: satu-satunya UMKM dengan data saat ini (Nasi Campur Bu Sari). Logic
-// laporan di bawah generik terhadap umkm_id manapun — ini cuma fallback
-// default kalau ?umkm_id= tidak diberikan di URL.
-const DEFAULT_UMKM_ID = '71d869df-7a97-4d29-af8c-40bc55f895bf'
+import { SpeedometerCard } from './_components/SpeedometerCard'
 
 export default async function DashboardPage({
   searchParams,
@@ -22,6 +20,7 @@ export default async function DashboardPage({
   const incomeStatement = buildIncomeStatement(trialBalance.rows)
   const balanceSheet = buildBalanceSheet(trialBalance.rows, incomeStatement.netIncome)
   const notes = await getReportNotes(umkmId)
+  const creditScore = await getCreditScore(umkmId)
 
   return (
     <div className="min-h-full bg-slate-50 px-4 py-8 sm:px-8">
@@ -31,6 +30,7 @@ export default async function DashboardPage({
           <p className="text-sm text-slate-500">Disusun otomatis dari data transaksi terklasifikasi (SAK EMKM)</p>
         </header>
 
+        <SpeedometerCard data={creditScore} />
         <IncomeStatementCard data={incomeStatement} />
         <BalanceSheetCard data={balanceSheet} />
         <NotesCard notes={notes} trialBalance={trialBalance} />

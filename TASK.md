@@ -131,15 +131,33 @@ Revisi versi pertama landing, bukan bangun ulang. Dashboard tetap tidak tersentu
 
 Target resmi Anggota A: *"PoC end-to-end bisa didemokan dari input transaksi sampai skor kredit tampil."* Ini mencakup **dua** skenario Bab 3 — catatan penting soal Pak Arief di bawah.
 
-### 3.1 — Speedometer & Gamifikasi (sisi Bu Sari)
-- [ ] Ambil output skor dari model Anggota B (JSON/API sederhana), tampilkan speedometer Hijau/Kuning/Merah di dashboard
-- [ ] Modul gamifikasi ringan: progres tantangan 30 hari + notifikasi sederhana (pakai `gamification_progress`)
+### 3.0 — Consent Screen + Skor ACS dari Ledger Real + Speedometer — ✅ SELESAI & TERVERIFIKASI (13 Juli)
+> ⚠️ **Keputusan tim (12-13 Juli) yang mengubah rencana awal 3.1**: model ML Anggota B **tidak dipakai** untuk skor runtime Bu Sari (dilatih di dataset publik, fitur tidak ada padanannya di ledger UMKM kita). Growth/Stability/Risk dihitung dari ledger real kita sendiri; Reputation tetap placeholder. Detail formula & bobot di PRD.md §F3.
 
-### 3.2 — Alur sisi Bank (skenario Pak Arief) — **KOREKSI dari catatan sebelumnya**
+- [x] **Layar consent baru** `app/consent/` (di antara `/masuk` dan `/dashboard`, gap yang sebelumnya belum ditutup) — 2 toggle independen (`transaction_data_access` wajib, `marketplace_review_access` opsional), default OFF, teks legal dari Anggota C di-render **persis** (diverifikasi programatis karakter-demi-karakter via `document.querySelectorAll('p')` dibanding string asli — cocok 100% untuk Toggle A, Toggle B, dan status SNAP BI). Link `/kebijakan-privasi` tampil di halaman yang sama. Server action `app/consent/actions.ts` menulis ke `consent_records` lalu memicu `saveCreditScore()`.
+- [x] **3 syarat teknis toggle diverifikasi**: (1) default tidak tercentang — dicek programatis, keduanya `false`; (2) independen — diuji 3 kombinasi (A saja → tombol aktif; A+B → aktif; B saja tanpa A → tombol **disabled**, karena A wajib untuk fitur inti, tapi B tetap bisa nyala sendiri tanpa bergantung A); (3) link privasi ada di halaman yang sama — dikonfirmasi elemen `<a href="/kebijakan-privasi">` eksis di DOM consent.
+- [x] **`src/lib/scoring/acsCalculator.ts`** (kalkulasi murni, tidak ada I/O) + **`creditScoreService.ts`** (fetch ledger + orkestrasi + simpan) — Growth/Stability/Risk dihitung dari `ledger_entries` real Bu Sari, HANYA bulan kalender yang sudah lengkap (bulan berjalan dikeluarkan supaya tidak bias oleh hari parsial). Reputation (placeholder 50) hanya diikutkan kalau `consent_records.marketplace_review_access.granted = true`; kalau tidak, komponen dikeluarkan dan bobotnya didistribusikan ulang proporsional ke 3 komponen lain (bukan dihukum jadi 0 — supaya user yang memilih privasi tidak otomatis kena skor lebih rendah).
+- [x] Endpoint manual `app/api/scoring/calculate/route.ts` (POST) untuk re-run verifikasi tanpa lewat UI.
+- [x] `app/dashboard/_components/SpeedometerCard.tsx` — gauge SVG setengah lingkaran 3 pita warna (Hijau ≥70/Kuning 40-69/Merah <40, threshold sama persis dengan `scoreCategoryOf()` lewat `SCORE_THRESHOLDS` — satu sumber kebenaran), breakdown 4 komponen, disclaimer Pasal 32 ayat (4) POJK 29/2024 **persis**. Data dibaca dari `credit_scores` (bukan hardcode) via `getCreditScore()`.
+- [x] **Verifikasi end-to-end 2 skenario** (dev server, klik toggle sungguhan lewat dispatch event, bukan cuma baca kode): (a) Toggle A saja → skor **58/100 Kuning** (Growth 71.6, Stability 91.9, Risk 9.5, Reputation "Belum aktif"); (b) Toggle A+B → skor **56/100 Kuning** (Reputation=50 ikut dihitung). Kedua angka dicocokkan manual dengan formula (weights redistribution utk kasus a) — **cocok persis** sampai satu desimal. `credit_scores` terkonfirmasi diganti (baris dummy `v0.1-dummy` hilang, baris baru `v0.5-ledger-partial`). `consent_records` terkonfirmasi terisi dengan `consent_type` persis sesuai skema.
+- [x] Trial balance **tidak berubah** sebelum/sesudah alur (Rp380.345.000 = Rp380.345.000, `is_balance: true`, dicek via `/api/reports/trial-balance` sebelum & sesudah) — scoring hanya membaca `ledger_entries`, tidak menulis ke sana.
+- [x] Mobile 360px: `/consent` dan `/dashboard` (dengan speedometer baru) nol overflow horizontal.
+- [x] `npm run build` lolos (18 route: + `/consent`, `/api/scoring/calculate`).
+- [x] `git diff` `src/lib/reports`, `src/lib/classifier`, dan 3 card dashboard lama (`IncomeStatementCard`/`BalanceSheetCard`/`NotesCard`) — **kosong**, tidak tersentuh.
+
+> **Bobot w1-w4 TENTATIF** (belum ada rujukan dari Anggota B): Growth 0.35, Stability 0.25, Reputation 0.20, Risk 0.20. Rasional lengkap ada di komentar `acsCalculator.ts` dan laporan sesi.
+>
+> **📌 Status file Anggota B (`best_model.pkl` dkk) masih ditunggu** — BUKAN blocker untuk item di atas (keputusan tim: model itu tidak dipakai untuk skor runtime, hanya jadi bukti metodologi benchmarking di paper). Kalau file itu akhirnya diserahkan, cek dulu apakah fitur yang dipakai match dengan skema ledger kita sebelum dipertimbangkan untuk dipakai — jangan diintegrasikan langsung tanpa audit fitur.
+>
+> ⚠️ Modul gamifikasi (progres tantangan 30 hari + `gamification_progress`) **belum dikerjakan sesi ini** — di luar scope Bagian 1-3 yang diminta, masih backlog.
+
+### 3.2 — Alur sisi Bank (skenario Pak Arief) — **KOREKSI dari catatan sebelumnya + koreksi framing 13 Juli**
 > ⚠️ Pak Arief **bukan** UMKM kedua yang perlu di-seed terpisah — dia Analis Kredit Bank Jatim di Bab 3. Skenarionya: dia melihat laporan+skor yang sudah dihasilkan dari data UMKM (Bu Sari), lalu approve dalam hitungan hari (bukan 14-30 hari manual). Yang perlu dibangun bukan data baru, tapi **sudut pandang UI kedua** dari data yang sama:
+>
+> **📌 Update 13 Juli (keputusan tim Pasal 56 POJK 29/2024, lihat PRD.md §6)**: framing lama "middleware integrator yang mengonsumsi output PKA berlisensi" **dibatalkan**. Pak Arief sekarang di-framing sebagai **user INTERNAL Bank Jatim** yang memakai alat internal (bukan pihak luar independen menerima laporan dari platform umum) — ini murni perubahan narasi/framing untuk paper, **tidak mengubah scope teknis** item di bawah (masih belum dikerjakan, masih backlog Minggu 3).
 
-- [ ] Halaman/view sederhana sisi "Analis Kredit": buka profil UMKM → lihat 3 laporan + skor ACS + Reputation Score
-- [ ] Aksi approve/reject yang mengubah `status` di `loan_applications` (draft/submitted → approved/rejected), dengan `submitted_at` & `decided_at` mencerminkan simulasi "3 hari" (kontras ke 14-30 hari manual di narasi)
+- [ ] Halaman/view sederhana sisi "Analis Kredit": buka profil UMKM → lihat 3 laporan + skor ACS (kini dari ledger real, lihat 3.0) + Reputation Score
+- [ ] Aksi approve/reject yang mengubah `status` di `loan_applications` (draft/submitted → approved/rejected) — pakai `created_at`→`reviewed_at` (⚠️ bukan `submitted_at`/`decided_at`, kolom itu tidak eksis — lihat PRD.md §4.1) untuk simulasi "3 hari" (kontras ke 14-30 hari manual di narasi)
 - [ ] Siapkan 2 skenario demo (Bu Sari sisi UMKM + Pak Arief sisi bank) yang saling terhubung datanya
 
 ---
