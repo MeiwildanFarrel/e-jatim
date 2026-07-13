@@ -2,11 +2,13 @@ import { getTrialBalance } from '@/lib/reports/trialBalance'
 import { buildIncomeStatement, buildBalanceSheet } from '@/lib/reports/financialStatements'
 import { getReportNotes } from '@/lib/reports/notes'
 import { getCreditScore } from '@/lib/scoring/getCreditScore'
+import { computeAndSaveStreak } from '@/lib/gamification/gamificationService'
 import { DEFAULT_UMKM_ID } from '@/lib/constants'
 import { IncomeStatementCard } from './_components/IncomeStatementCard'
 import { BalanceSheetCard } from './_components/BalanceSheetCard'
 import { NotesCard } from './_components/NotesCard'
 import { SpeedometerCard } from './_components/SpeedometerCard'
+import { GamificationCard } from './_components/GamificationCard'
 
 export default async function DashboardPage({
   searchParams,
@@ -21,6 +23,7 @@ export default async function DashboardPage({
   const balanceSheet = buildBalanceSheet(trialBalance.rows, incomeStatement.netIncome)
   const notes = await getReportNotes(umkmId)
   const creditScore = await getCreditScore(umkmId)
+  const gamification = await computeAndSaveStreak(umkmId)
 
   return (
     <div className="min-h-full bg-slate-50 px-4 py-8 sm:px-8">
@@ -31,6 +34,7 @@ export default async function DashboardPage({
         </header>
 
         <SpeedometerCard data={creditScore} />
+        <GamificationCard data={gamification} />
         <IncomeStatementCard data={incomeStatement} />
         <BalanceSheetCard data={balanceSheet} />
         <NotesCard notes={notes} trialBalance={trialBalance} />

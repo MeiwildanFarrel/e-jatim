@@ -42,7 +42,7 @@ Membuktikan bahwa **data transaksi digital UMKM yang selama ini tidak terpakai**
 - Bobot `w1=0.35 (Growth), w2=0.25 (Stability), w3=0.20 (Reputation), w4=0.20 (Risk)` — **TENTATIF**, belum ada rujukan pasti dari Anggota B; akan diganti begitu ada hasil benchmarking model ML asli.
 - Output: speedometer Hijau (≥70) / Kuning (40-69) / Merah (<40) di `app/dashboard/_components/SpeedometerCard.tsx`.
 - ✅ **Verifikasi live (13 Juli)**: skor Bu Sari dihitung ulang dari data ledger sungguhan menghasilkan **58/100 (Kuning)** saat Toggle B tidak disetujui (Growth 71.6, Stability 91.9, Risk 9.5, Reputation tidak aktif), dan **56/100 (Kuning)** saat Toggle B disetujui (Reputation=50 ikut dihitung). Baris dummy lama (`model_version: "v0.1-dummy"`, score 72) sudah **diganti** — `credit_scores` sekarang berisi baris nyata `model_version: "v0.5-ledger-partial"`.
-- Growth real (+21.6%, April→Juni) sedikit berbeda dari angka +18,0% yang dikonfirmasi 12 Juli di §5 — lihat catatan di §5, ini pertambahan data alami, bukan revisi metodologi.
+- Growth real (+21,6%, April→Juni, bulan kalender penuh) adalah **angka final resmi** sejak 13 Juli — menggantikan +18,0% yang sempat dikonfirmasi 12 Juli. Kronologi & alasan lengkap kenapa +21,6% dipilih (bukan sekadar "pertambahan data") ada di §5.
 
 ### F4. Reputation Score (NLP)
 - Analisis sentimen ulasan marketplace (Word2Vec + Random Forest — expertise Pak Sena).
@@ -118,9 +118,13 @@ Bab 3 proposal berisi **dua** skenario stakeholder yang harus benar-benar bisa d
 
 > ⚠️ **Catatan seed 3 bulan Bu Sari (selesai 11 Juli)** — 917 transaksi baru (1 Apr–29 Jun 2026) via pipeline Tier 1, ditambah 9 transaksi lama + 4 dari mock-snap ingest. Total 994 transaksi, 939 classified (930 Tier 1 + 9 Tier 2), 55 needs_tier3, 1.878 ledger_entries, **balance** (`total_debit = total_kredit = Rp380.345.000` per 12 Juli, termasuk transaksi uji tambahan).
 >
-> **✅ KEPUTUSAN RESMI (12 Juli) — Growth = +18% total, bukan per bulan.** Angka final saat itu: April Rp96.005.000 → Juni(1-29) Rp113.279.000 = **+18,0% total** — data riil terverifikasi sistem, bukan target manual.
+> **✅ KEPUTUSAN RESMI FINAL (13 Juli) — Growth = +21,6% total (April→Juni, bulan kalender penuh).** Ini menggantikan angka +18,0% yang sempat dikonfirmasi 12 Juli.
 >
-> **📌 Update 13 Juli — perhitungan Growth otomatis (`src/lib/scoring/acsCalculator.ts`) memakai bulan Juni PENUH** (bukan 1-29) sebagai endpoint, dan ledger sudah bertambah beberapa transaksi lagi sejak snapshot 12 Juli (kemungkinan dari pengujian mock-snap ingest) — Juni sekarang Rp116.779.000, sehingga growth live = **April Rp96.005.000 → Juni Rp116.779.000 = +21,6% total**, sedikit lebih tinggi dari +18,0% yang dikonfirmasi 12 Juli. Ini pertambahan data alami, **bukan** perubahan metodologi — angka +18,0% tetap sah sebagai snapshot historis 12 Juli, tapi skor ACS yang tersimpan/ditampilkan di dashboard memakai angka live ini.
+> **Kronologi & akar penyebab (investigasi 13 Juli, dikonfirmasi tuntas — bukan data uji/kontaminasi)**: +18,0% dihitung dari rentang "1 April–29 Juni" — batas tanggal 29 itu **bukan pilihan metodologis**, murni kebetulan teknis: skrip seed 3 bulan (`scripts/seed-bu-sari-3-months.ts`) sengaja berhenti di 29 Juni supaya tidak tumpang tindih tanggal dengan 9 transaksi lama yang sudah ada sejak sebelumnya (mulai 30 Juni). Saat formula ACS (`acsCalculator.ts`) menghitung growth dari **bulan kalender penuh** (standar, tanpa pengecualian tanggal buatan), 1 transaksi asli tanggal 30 Juni (Rp3.500.000, sudah ada sejak sebelum seeding, bukan data baru) ikut terhitung → Juni jadi Rp116.779.000 (bukan Rp113.279.000) → growth naik jadi +21,6%.
+>
+> **Kenapa +21,6% dipilih sebagai final, bukan +18,0%**: +21,6% pakai definisi yang defensible (3 bulan kalender penuh, tanpa pengecualian tanggal yang sulit dijustifikasi). +18,0% secara teknis "benar" tapi batasnya (29 Juni) tidak punya alasan bisnis — kalau ditelisik juri, jawabannya cuma "kebetulan skrip data testing". Opsi hardcode pengecualian tanggal 30 Juni untuk memaksa hasil tetap 18,0% **secara sadar tidak dipilih** — rapuh, tidak general untuk UMKM/bulan lain.
+>
+> Detail perhitungan lengkap (langkah demi langkah, termasuk formula Growth & Stability) ada di TASK.md §3.0. Anggota C **sudah diinfokan 13 Juli** untuk mengganti angka di draf Bab 1/5 dari +18,0% ke +21,6% sebelum finalisasi (target beliau 16 Juli).
 
 - **Pak Arief** — Analis Kredit Bank Jatim Cabang Surabaya. ⚠️ **Bukan UMKM kedua** — dia stakeholder sisi **bank/penilai**. Kondisi "sebelum": verifikasi manual 14–30 hari, 60% pengajuan ditolak karena bukti keuangan tidak cukup. Kondisi "sesudah": dia buka laporan + skor yang sudah dihasilkan sistem dari data Bu Sari, lalu approve dalam ~3 hari (diukur dari `created_at`→`reviewed_at` di `loan_applications` — lihat koreksi skema §4.1). **Butuh view UI kedua** (lihat F6) yang mengonsumsi data yang sama dengan sisi Bu Sari.
 
