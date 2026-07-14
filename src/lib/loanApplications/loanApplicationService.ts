@@ -140,3 +140,18 @@ export async function decideLoanApplication(
   if (error) throw new Error(error.message)
   return data as LoanApplicationRow
 }
+
+/** Daftar pengajuan yang SUDAH diputuskan bank (status='approved' atau 'rejected') —
+ * dipakai untuk riwayat di halaman `/bank`. */
+export async function listDecidedApplications(): Promise<LoanApplicationWithUmkm[]> {
+  const { data, error } = await supabaseAdmin
+    .from('loan_applications')
+    .select(
+      'id, umkm_id, credit_score_id, requested_amount, status, bank_analyst_id, reviewed_at, decision_notes, created_at, umkm_profiles(business_name, city), credit_scores(score, score_category)'
+    )
+    .in('status', ['approved', 'rejected'])
+    .order('reviewed_at', { ascending: false })
+
+  if (error) throw new Error(error.message)
+  return (data ?? []) as unknown as LoanApplicationWithUmkm[]
+}

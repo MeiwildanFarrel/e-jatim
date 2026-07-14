@@ -36,16 +36,6 @@ const NAV_ITEMS = [
     ),
   },
   {
-    href: '/progres',
-    label: 'Progres',
-    fullLabel: 'Progres & Tantangan',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" aria-hidden="true" className="h-5 w-5">
-        <path d="M8 4h8a2 2 0 0 1 2 2v13a1 1 0 0 1-1.5.9L12 17.5 7.5 19.9A1 1 0 0 1 6 19V6a2 2 0 0 1 2-2Z" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
     href: '/ajukan-kur',
     label: 'Ajukan KUR',
     icon: (
@@ -72,21 +62,34 @@ export function DashboardNav({ variant }: { variant: 'sidebar' | 'bottom' }) {
 
   if (variant === 'sidebar') {
     return (
-      <nav className="flex flex-col gap-1 p-3" aria-label="Navigasi dashboard">
-        {items.map((item) => (
+      <>
+        <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Navigasi dashboard">
+          {items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                item.isActive ? 'bg-blue-50 text-blue-900' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+              aria-current={item.isActive ? 'page' : undefined}
+            >
+              {item.icon}
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="border-t border-slate-100 p-3">
           <Link
-            key={item.href}
-            href={item.href}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-              item.isActive ? 'bg-blue-50 text-blue-900' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-            }`}
-            aria-current={item.isActive ? 'page' : undefined}
+            href="/"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
           >
-            {item.icon}
-            {item.fullLabel ?? item.label}
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" aria-hidden="true" className="h-5 w-5 stroke-current">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+            </svg>
+            Keluar
           </Link>
-        ))}
-      </nav>
+        </div>
+      </>
     )
   }
 
@@ -105,6 +108,15 @@ export function DashboardNav({ variant }: { variant: 'sidebar' | 'bottom' }) {
           <span className="truncate">{item.label}</span>
         </Link>
       ))}
+      <Link
+        href="/"
+        className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[11px] font-medium text-slate-500 hover:text-red-600"
+      >
+        <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" aria-hidden="true" className="h-5 w-5 stroke-current">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+        </svg>
+        <span className="truncate">Keluar</span>
+      </Link>
     </nav>
   )
 }

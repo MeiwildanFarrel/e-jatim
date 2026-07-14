@@ -126,21 +126,46 @@ export async function computeCreditScore(umkmId: string, referenceDate: Date = n
 export async function saveCreditScore(umkmId: string, referenceDate: Date = new Date()): Promise<CreditScoreResult> {
   const result = await computeCreditScore(umkmId, referenceDate)
 
-  const { error: deleteError } = await supabaseAdmin.from('credit_scores').delete().eq('umkm_id', umkmId)
-  if (deleteError) throw new Error(deleteError.message)
+  // Query if there's an existing score row
+  const { data: existingScore, error: selectError } = await supabaseAdmin
+    .from('credit_scores')
+    .select('id')
+    .eq('umkm_id', umkmId)
+    .limit(1)
 
-  const { error: insertError } = await supabaseAdmin.from('credit_scores').insert({
-    umkm_id: umkmId,
-    score: result.breakdown.finalScore,
-    score_category: result.breakdown.scoreCategory,
-    growth_score: result.breakdown.growthScore,
-    stability_score: result.breakdown.stabilityScore,
-    reputation_score: result.breakdown.reputationScore,
-    risk_factor_score: result.breakdown.riskScore,
-    calculated_at: new Date().toISOString(),
-    model_version: MODEL_VERSION,
-  })
-  if (insertError) throw new Error(insertError.message)
+  if (selectError) throw new Error(selectError.message)
+
+  if (existingScore && existingScore.length > 0) {
+    // Update existing row to avoid foreign key constraint violations
+    const { error: updateError } = await supabaseAdmin
+      .from('credit_scores')
+      .update({
+        score: result.breakdown.finalScore,
+        score_category: result.breakdown.scoreCategory,
+        growth_score: result.breakdown.growthScore,
+        stability_score: result.breakdown.stabilityScore,
+        reputation_score: result.breakdown.reputationScore,
+        risk_factor_score: result.breakdown.riskScore,
+        calculated_at: new Date().toISOString(),
+        model_version: MODEL_VERSION,
+      })
+      .eq('id', existingScore[0].id)
+    if (updateError) throw new Error(updateError.message)
+  } else {
+    // Insert new row if none exists
+    const { error: insertError } = await supabaseAdmin.from('credit_scores').insert({
+      umkm_id: umkmId,
+      score: result.breakdown.finalScore,
+      score_category: result.breakdown.scoreCategory,
+      growth_score: result.breakdown.growthScore,
+      stability_score: result.breakdown.stabilityScore,
+      reputation_score: result.breakdown.reputationScore,
+      risk_factor_score: result.breakdown.riskScore,
+      calculated_at: new Date().toISOString(),
+      model_version: MODEL_VERSION,
+    })
+    if (insertError) throw new Error(insertError.message)
+  }
 
   return result
 }
