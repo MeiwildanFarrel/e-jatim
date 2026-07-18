@@ -1,17 +1,31 @@
 /**
  * Seed ~3 bulan transaksi harian untuk UMKM "Bu Sari" (Nasi Campur Bu Sari).
- * Dijalankan sekali secara manual: npx tsx scripts/seed-bu-sari-3-months.ts
+ * Dijalankan manual, BOLEH DIULANG kapan saja: npx tsx scripts/seed-bu-sari-3-months.ts
  *
  * Hanya INSERT ke tabel `transactions` (classification_status = 'pending').
  * Klasifikasi ke ledger_entries dilakukan lewat endpoint /api/classify yang
- * sudah ada — dijalankan terpisah setelah script ini selesai (lihat laporan).
+ * sudah ada — dijalankan terpisah setelah script ini selesai.
  *
- * Rentang: 1 April - 29 Juni 2026 (mendahului 13 transaksi lama yang sudah
- * ada, yang mulai dari 30 Juni 2026 — supaya tidak tumpang tindih tanggal).
+ * ⚠️ RENTANG TANGGAL DINAMIS (14 Juli — sebelumnya hardcode 1 April-29 Juni
+ * 2026, jadi makin basi seiring waktu berjalan karena streak gamifikasi
+ * butuh transaksi mendekati "hari ini"):
+ *   - Bulan A (lengkap, 2 bulan sebelum bulan berjalan)
+ *   - Bulan B (lengkap, 1 bulan sebelum bulan berjalan)
+ *   - Bulan C (PARSIAL, bulan berjalan, tanggal 1 s.d. HARI SCRIPT DIJALANKAN)
+ * Growth ACS (lihat src/lib/scoring/creditScoreService.ts) HANYA memakai
+ * bulan kalender yang sudah LENGKAP (bulan berjalan selalu dikeluarkan) —
+ * jadi Growth yang terukur = (B-A)/A, dan Bulan C murni berfungsi supaya
+ * `last_activity_date` gamifikasi selalu dekat "hari ini" tanpa mengubah
+ * angka Growth. Target: A=Rp96.000.000, B=Rp96.000.000×1.216≈+21,6% —
+ * mereplikasi besaran growth yang sudah dilaporkan sebelumnya, terlepas
+ * dari kalender bulan mana yang sedang berjalan saat script dijalankan.
  *
- * Target pertumbuhan pendapatan (akun 400/401): April -> Juni = +18% total,
- * TIDAK linear (Mei sengaja bukan tepat di tengah, plus noise harian +
- * "hari sepi" acak ~12% dari hari).
+ * ⚠️ IDEMPOTENT — WAJIB BISA DIULANG TANPA DOBEL: sebelum generate, script
+ * mengecek tanggal (per hari) yang SUDAH punya transaksi untuk UMKM ini,
+ * lalu MELEWATI hari itu sepenuhnya (tidak generate, tidak insert). Cuma
+ * hari yang benar-benar belum ada datanya yang di-insert. Ini juga otomatis
+ * menambal celah tanggal lama (mis. hari kosong di antara batch seed
+ * sebelumnya) kalau kebetulan masuk rentang 3 bulan terbaru.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -41,6 +55,7 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
 })
 
 const UMKM_ID = '71d869df-7a97-4d29-af8c-40bc55f895bf' // Nasi Campur Bu Sari
+const PAGE_SIZE = 1000
 
 interface TransactionRow {
   umkm_id: string
@@ -66,6 +81,14 @@ function roundToThousand(n: number): number {
 
 function pickRandom<T>(arr: T[]): T {
   return arr[randInt(0, arr.length - 1)]
+}
+
+function daysInMonth(year: number, monthIndex0: number): number {
+  return new Date(Date.UTC(year, monthIndex0 + 1, 0)).getUTCDate()
+}
+
+function dayKey(year: number, monthIndex0: number, day: number): string {
+  return `${year}-${String(monthIndex0 + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
 // ---------------------------------------------------------------------------
@@ -107,17 +130,52 @@ const MODAL_DESC = 'Setor modal usaha tambahan'
 const MODAL_SOURCE = 'qris'
 
 // ---------------------------------------------------------------------------
-// Rencana bulanan — target TOTAL pendapatan per bulan (akun 400/401).
-// April -> Juni = +18% persis (103_680_000 di Mei sengaja bukan titik tengah
-// linear supaya trennya tidak lurus sempurna).
-// Juni cuma sampai tanggal 29 supaya tidak tabrakan dengan transaksi lama
-// yang sudah mulai 30 Juni 2026.
+// Rencana bulanan DINAMIS — dihitung dari "hari ini" (waktu script
+// dijalankan), bukan tanggal hardcode. Lihat catatan di header file.
 // ---------------------------------------------------------------------------
 
+const REVENUE_TARGET_A = 96_000_000
+const REVENUE_TARGET_B = 116_700_000 // ~+21,6% dari A — replikasi growth yang sudah dilaporkan
+
+const now = new Date()
+const curYear = now.getUTCFullYear()
+const curMonth0 = now.getUTCMonth() // 0-based
+const curDay = now.getUTCDate()
+
+function shiftMonth(year: number, month0: number, delta: number): { year: number; month0: number } {
+  const total = year * 12 + month0 + delta
+  return { year: Math.floor(total / 12), month0: ((total % 12) + 12) % 12 }
+}
+
+const monthA = shiftMonth(curYear, curMonth0, -2)
+const monthB = shiftMonth(curYear, curMonth0, -1)
+
 const MONTHS = [
-  { label: 'April 2026', year: 2026, month: 3, days: 30, revenueTarget: 96_000_000 },
-  { label: 'Mei 2026', year: 2026, month: 4, days: 31, revenueTarget: 103_680_000 },
-  { label: 'Juni 2026 (s.d. tgl 29)', year: 2026, month: 5, days: 29, revenueTarget: 113_280_000 },
+  {
+    label: `Bulan A (${monthA.year}-${String(monthA.month0 + 1).padStart(2, '0')}, lengkap)`,
+    year: monthA.year,
+    month: monthA.month0,
+    days: daysInMonth(monthA.year, monthA.month0),
+    revenueTarget: REVENUE_TARGET_A,
+  },
+  {
+    label: `Bulan B (${monthB.year}-${String(monthB.month0 + 1).padStart(2, '0')}, lengkap)`,
+    year: monthB.year,
+    month: monthB.month0,
+    days: daysInMonth(monthB.year, monthB.month0),
+    revenueTarget: REVENUE_TARGET_B,
+  },
+  {
+    label: `Bulan C (${curYear}-${String(curMonth0 + 1).padStart(2, '0')}, PARSIAL s.d. hari ini)`,
+    year: curYear,
+    month: curMonth0,
+    days: curDay, // hanya s.d. hari ini, bukan seluruh bulan
+    // Target diskalakan proporsional terhadap pace Bulan B (bulan lengkap
+    // terakhir) — bulan ini selalu dikeluarkan dari kalkulasi Growth
+    // (creditScoreService.ts), jadi angka pastinya tidak kritis, cuma
+    // supaya kelihatan wajar & tidak ada "jurang" pace dari Bulan B.
+    revenueTarget: (REVENUE_TARGET_B / daysInMonth(monthB.year, monthB.month0)) * curDay,
+  },
 ] as const
 
 interface DayPlan {
@@ -281,30 +339,69 @@ function generateDayTransactions(day: DayPlan, revenueTarget: number): Transacti
   return rows
 }
 
+/** Ambil semua hari (YYYY-MM-DD) yang SUDAH punya transaksi untuk UMKM ini
+ * di rentang [rangeStartIso, rangeEndIso) — dipaginasi (GOTCHA #4, PostgREST
+ * default cap 1000 baris per query, jangan sampai diam-diam terpotong). */
+async function fetchExistingDayKeys(rangeStartIso: string, rangeEndIso: string): Promise<Set<string>> {
+  const keys = new Set<string>()
+  let from = 0
+  while (true) {
+    const { data, error } = await supabaseAdmin
+      .from('transactions')
+      .select('transaction_date')
+      .eq('umkm_id', UMKM_ID)
+      .gte('transaction_date', rangeStartIso)
+      .lt('transaction_date', rangeEndIso)
+      .range(from, from + PAGE_SIZE - 1)
+
+    if (error) throw error
+    for (const row of data ?? []) {
+      keys.add((row.transaction_date as string).slice(0, 10))
+    }
+    if ((data ?? []).length < PAGE_SIZE) break
+    from += PAGE_SIZE
+  }
+  return keys
+}
+
 async function main(): Promise<void> {
+  const rangeStartIso = new Date(Date.UTC(monthA.year, monthA.month0, 1)).toISOString()
+  const rangeEndIso = new Date(Date.UTC(curYear, curMonth0, curDay + 1)).toISOString() // eksklusif, s.d. akhir hari ini
+
+  console.log(`Rentang target: ${rangeStartIso} s.d. ${rangeEndIso} (eksklusif)`)
+  MONTHS.forEach((m) => {
+    console.log(`  ${m.label}: ${m.days} hari, target pendapatan Rp${Math.round(m.revenueTarget).toLocaleString('id-ID')}`)
+  })
+  const growthPct = ((REVENUE_TARGET_B - REVENUE_TARGET_A) / REVENUE_TARGET_A) * 100
+  console.log(`Target growth Bulan A -> Bulan B (dipakai kalkulasi ACS): +${growthPct.toFixed(1)}%`)
+
+  console.log('\nMengecek hari yang sudah punya data (supaya tidak dobel)...')
+  const existingDayKeys = await fetchExistingDayKeys(rangeStartIso, rangeEndIso)
+  console.log(`Ditemukan ${existingDayKeys.size} hari yang sudah punya transaksi di rentang ini — akan DILEWATI.`)
+
   const plans = buildDayPlans()
   const dailyRevenueTargets = assignDailyRevenueTargets(plans)
+
+  const newPlans = plans.filter((p) => !existingDayKeys.has(dayKey(p.year, p.month, p.day)))
+  console.log(`${newPlans.length} dari ${plans.length} hari akan di-generate (sisanya sudah ada, dilewati).`)
+
+  if (newPlans.length === 0) {
+    console.log('\nTidak ada hari baru untuk di-generate — data sudah lengkap untuk rentang ini. Selesai (tidak ada insert).')
+    return
+  }
 
   const allRows: TransactionRow[] = []
   const perDayCounts: number[] = []
 
-  for (const day of plans) {
+  for (const day of newPlans) {
     const target = dailyRevenueTargets.get(day)!
     const dayRows = generateDayTransactions(day, target)
     perDayCounts.push(dayRows.length)
     allRows.push(...dayRows)
   }
 
-  console.log(`Total hari: ${plans.length}`)
-  console.log(`Total transaksi digenerate: ${allRows.length}`)
-  console.log(`Transaksi/hari — min: ${Math.min(...perDayCounts)}, max: ${Math.max(...perDayCounts)}, avg: ${(allRows.length / plans.length).toFixed(1)}`)
-
-  // Ringkasan target pendapatan per bulan (buat sanity check sebelum insert)
-  MONTHS.forEach((m) => {
-    console.log(`Target pendapatan ${m.label}: Rp${m.revenueTarget.toLocaleString('id-ID')}`)
-  })
-  const growthPct = ((MONTHS[2].revenueTarget - MONTHS[0].revenueTarget) / MONTHS[0].revenueTarget) * 100
-  console.log(`Target growth April -> Juni: +${growthPct.toFixed(1)}%`)
+  console.log(`\nTotal transaksi digenerate (hari baru saja): ${allRows.length}`)
+  console.log(`Transaksi/hari — min: ${Math.min(...perDayCounts)}, max: ${Math.max(...perDayCounts)}, avg: ${(allRows.length / newPlans.length).toFixed(1)}`)
 
   const BATCH_SIZE = 200
   for (let i = 0; i < allRows.length; i += BATCH_SIZE) {
@@ -317,7 +414,8 @@ async function main(): Promise<void> {
     console.log(`Insert batch ${i}-${i + batch.length} OK`)
   }
 
-  console.log('Seeding selesai. Semua baris berstatus classification_status = pending.')
+  console.log('\nSeeding selesai. Semua baris baru berstatus classification_status = pending.')
+  console.log('Jalankan POST /api/classify setelah ini supaya masuk ledger_entries.')
 }
 
 main().catch((err) => {

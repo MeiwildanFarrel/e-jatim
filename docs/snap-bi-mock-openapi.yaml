@@ -5,14 +5,20 @@ info:
     Spesifikasi mock API bergaya SNAP BI (Standar Nasional Open API Pembayaran),
     disusun mengacu pada struktur resmi SNAP BI (SK Gubernur BI No. 23/10/KEP.GBI/2021
     dan PADG No. 23/15/PADG/2021). Dokumen ini merepresentasikan endpoint
-    account-inquiry dan transaction-history untuk keperluan Proof of Concept (PoC)
-    E-Jatim TrustLink — BUKAN koneksi produksi ke Penyelenggara Jasa Pembayaran (PJP)
-    berlisensi. Struktur field dan header divalidasi berdasarkan dokumentasi publik
-    SNAP BI (BRI API Developer Portal, apidevportal.bi.go.id), namun nilai dan
-    validasi signature pada PoC ini bersifat simulasi. Sejak 1 September 2023,
+    account-inquiry dan transaction-history (tag `snap-bi-standard`) untuk keperluan
+    Proof of Concept (PoC) E-Jatim TrustLink — BUKAN koneksi produksi ke Penyelenggara
+    Jasa Pembayaran (PJP) berlisensi. Struktur field dan header divalidasi berdasarkan
+    dokumentasi publik SNAP BI (BRI API Developer Portal, apidevportal.bi.go.id), namun
+    nilai dan validasi signature pada PoC ini bersifat simulasi. Sejak 1 September 2023,
     pengelolaan operasional SNAP (termasuk publikasi dan pembaruan standar teknis)
     telah dialihkan Bank Indonesia kepada ASPI (Asosiasi Sistem Pembayaran Indonesia)
     sebagai Self-Regulatory Organization; perizinan PJP tetap kewenangan BI/OJK.
+
+    Dokumen ini JUGA mendokumentasikan satu endpoint tambahan, /ingest (tag
+    `internal-orchestration`), yang BUKAN bagian dari standar SNAP BI — endpoint
+    itu murni orkestrasi internal sistem kita sendiri (mensimulasikan proses
+    tarikan malam hari dari SNAP ke database internal). Lihat deskripsi tag
+    masing-masing di bawah untuk pembeda yang eksplisit.
   version: "0.1.0-poc"
   contact:
     name: E-Jatim TrustLink Team — Anggota A (Tech Lead)
@@ -20,9 +26,26 @@ servers:
   - url: https://e-jatim.vercel.app/api/mock-snap
     description: Mock server (PoC) — bukan endpoint produksi SNAP BI
 
+tags:
+  - name: snap-bi-standard
+    description: >
+      Endpoint yang MEREPRESENTASIKAN struktur resmi SNAP BI (bentuk
+      request/response, header wajib X-TIMESTAMP/X-SIGNATURE/dst mengikuti
+      pola PJP asli). Kalau nanti terhubung ke PJP berlisensi sungguhan,
+      endpoint-endpoint inilah yang punya padanan resmi di sisi SNAP BI.
+  - name: internal-orchestration
+    description: >
+      Endpoint BUKAN bagian dari standar SNAP BI — tidak punya padanan di
+      spesifikasi resmi BI/ASPI. Ini murni orkestrasi INTERNAL milik sistem
+      E-Jatim TrustLink sendiri, yang di baliknya memanggil endpoint
+      snap-bi-standard di atas. Dipisahkan tag-nya secara sengaja supaya
+      tidak disalahartikan sebagai bagian dari standar SNAP BI saat dibaca
+      untuk paper/dokumentasi kepatuhan.
+
 paths:
   /account-inquiry:
     post:
+      tags: [snap-bi-standard]
       summary: Account Inquiry (mock)
       description: >
         Mensimulasikan pengecekan validitas dan informasi dasar merchant QRIS UMKM,
@@ -75,6 +98,7 @@ paths:
 
   /transaction-history:
     post:
+      tags: [snap-bi-standard]
       summary: Transaction History (mock)
       description: >
         Mensimulasikan penarikan riwayat transaksi QRIS/e-wallet UMKM dalam
@@ -135,6 +159,96 @@ paths:
                     type: "Debit"
         '400':
           description: Permintaan tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ingest:
+    post:
+      tags: [internal-orchestration]
+      summary: "⚠️ Ingest transaksi ke database internal (BUKAN endpoint SNAP BI)"
+      description: >
+        **PENTING — endpoint ini TIDAK ADA padanannya di standar SNAP BI resmi.**
+        Ini adalah endpoint orkestrasi INTERNAL milik E-Jatim TrustLink sendiri,
+        yang mensimulasikan proses "server kita menarik data transaksi dari SNAP
+        setiap malam" (batch nightly pull). Alurnya: endpoint ini memanggil
+        /transaction-history (endpoint bergaya SNAP BI di atas) untuk 24 jam
+        terakhir milik satu accountNo, lalu meng-insert hasilnya sebagai baris
+        baru ke tabel `transactions` internal (status `pending`, menunggu
+        klasifikasi Auto-Ledger Tier 1/2 lewat endpoint `/api/classify` yang
+        terpisah). Endpoint account-inquiry dan transaction-history yang
+        merepresentasikan struktur SNAP BI sesungguhnya — endpoint ini murni
+        "lem" internal di sisi E-Jatim TrustLink, jangan dikutip sebagai bagian
+        dari kepatuhan/struktur SNAP BI di paper.
+      operationId: ingestNightlyPull
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [umkm_id, accountNo]
+              properties:
+                umkm_id:
+                  type: string
+                  format: uuid
+                  description: ID UMKM di database internal E-Jatim TrustLink (bukan field standar SNAP BI)
+                accountNo:
+                  type: string
+                  description: Nomor akun/merchant QRIS, diteruskan apa adanya ke /transaction-history
+            example:
+              umkm_id: "71d869df-7a97-4d29-af8c-40bc55f895bf"
+              accountNo: "QRIS-MOCK-001"
+      responses:
+        '200':
+          description: Sukses — transaksi 24 jam terakhir berhasil ditarik & disimpan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  umkm_id:
+                    type: string
+                  accountNo:
+                    type: string
+                  period:
+                    type: object
+                    properties:
+                      fromDateTime:
+                        type: string
+                        format: date-time
+                      toDateTime:
+                        type: string
+                        format: date-time
+                  fetched:
+                    type: integer
+                    description: Jumlah baris dari /transaction-history
+                  inserted:
+                    type: integer
+                    description: Jumlah baris berhasil di-insert ke tabel transactions
+                  transactions:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+        '400':
+          description: Field umkm_id/accountNo tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Gagal menarik data dari /transaction-history internal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Gagal insert ke database
           content:
             application/json:
               schema:

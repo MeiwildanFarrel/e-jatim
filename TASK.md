@@ -131,6 +131,8 @@ Revisi versi pertama landing, bukan bangun ulang. Dashboard tetap tidak tersentu
 
 Target resmi Anggota A: *"PoC end-to-end bisa didemokan dari input transaksi sampai skor kredit tampil."* Ini mencakup **dua** skenario Bab 3 — catatan penting soal Pak Arief di bawah.
 
+> **✅ KEPUTUSAN FINAL (14 Juli, bersama Pak Sena/dosen pembimbing): Tier 3 LLM TIDAK akan dibangun sama sekali** — Auto-Ledger berhenti permanen di Tier 2, kembali jadi Out of Scope (lihat PRD.md §3 & §F1). Ini bukan penundaan, ini pembatalan penuh. Diagram arsitektur yang sempat dikirim ke Anggota C (menampilkan 3 tingkat Tier) akan **direvisi ulang** menghapus Tier 3 dari diagramnya sendiri — versi lama akan digantikan versi baru begitu direvisi, jangan dipakai sebagai rujukan lagi. (Catatan: tidak ditemukan referensi tertulis "Tier 3 wajib karena masuk diagram resmi" di PRD.md/TASK.md saat audit 14 Juli — kalau catatan semacam itu ada, kemungkinan hanya di komunikasi lisan/chat tim atau draf paper, bukan di file-file ini.)
+
 ### 3.0 — Consent Screen + Skor ACS dari Ledger Real + Speedometer — ✅ SELESAI & TERVERIFIKASI (13 Juli)
 > ⚠️ **Keputusan tim (12-13 Juli) yang mengubah rencana awal 3.1**: model ML Anggota B **tidak dipakai** untuk skor runtime Bu Sari (dilatih di dataset publik, fitur tidak ada padanannya di ledger UMKM kita). Growth/Stability/Risk dihitung dari ledger real kita sendiri; Reputation tetap placeholder. Detail formula & bobot di PRD.md §F3.
 
@@ -193,6 +195,32 @@ Redesign murni layout/navigasi — **tidak ada perubahan logic** di `acsCalculat
 - [x] Mobile 360px: nol overflow di `/dashboard` (+ 4 sub-tab), `/bank`, `/bank/[id]`.
 - [x] `npm run build` lolos (24 route).
 - [x] `git diff` untuk semua file logic murni (`src/lib/scoring`, `src/lib/gamification/streakCalculator.ts`, `src/lib/reports`, `src/lib/classifier`, `app/consent`, 5 kartu dashboard lama) — **kosong**.
+
+---
+
+### 3.4 — Beres-beres pra-demo: dokumentasi /ingest + seed data dinamis — ✅ SELESAI & TERVERIFIKASI (18 Juli)
+
+- [x] **Dokumentasi endpoint `/ingest`** di `docs/snap-bi-mock-openapi.yaml` — ditambahkan sebagai path `/ingest` dengan tag baru `internal-orchestration` (dipisah eksplisit dari tag `snap-bi-standard` yang menandai `/account-inquiry` dan `/transaction-history`), deskripsi ⚠️ eksplisit menyatakan endpoint ini **BUKAN** bagian dari standar SNAP BI — murni orkestrasi internal ("tarikan malam hari" dari SNAP mock ke tabel `transactions`). `info.description` di atas juga diupdate menyebut pembeda ini. YAML divalidasi parse (`js-yaml`) — 3 paths, 2 tags, tidak ada syntax error.
+- [x] **File `Spesifikasi_Mock_API_SNAP_BI.pdf` dikonfirmasi ULANG tidak ada** di repo manapun (`find` menyeluruh, di luar `node_modules`) — konsisten dengan laporan audit 14 Juli. Kalau file itu memang ada di tempat lain (mis. Drive tim), perlu diupdate manual di luar repo ini.
+- [x] **`scripts/seed-bu-sari-3-months.ts` diubah jadi rentang tanggal DINAMIS** — 2 bulan kalender lengkap sebelum bulan berjalan (dipakai kalkulasi Growth ACS) + bulan berjalan PARSIAL sampai hari script dijalankan (menjaga `last_activity_date` gamifikasi selalu dekat "hari ini"). Target revenue Bulan A=Rp96.000.000, Bulan B=Rp116.700.000 (+21,6%, mereplikasi angka growth yang sudah dilaporkan) — bukan lagi hardcode "April/Mei/Juni 2026".
+- [x] **Idempotency**: sebelum generate, script mengecek (per-hari, dipaginasi sesuai GOTCHA #4) tanggal mana yang SUDAH punya transaksi untuk Bu Sari, lalu melewati hari itu — cuma hari yang benar-benar kosong yang di-insert. Aman dijalankan ulang kapan pun, tidak pernah dobel.
+- [x] **Dijalankan nyata (18 Juli)**: rentang target 1 Mei–18 Juli (79 hari), 70 hari sudah ada (dilewati), **9 hari baru digenerate** (92 transaksi baru) — mengisi celah 7-9 Juli yang sebelumnya kosong (ditemukan di investigasi growth 13 Juli) SEKALIGUS menyambung sampai hari ini (18 Juli).
+- [x] `/api/classify` dijalankan setelah seed — **92/92 transaksi baru terklasifikasi Tier 1 (regex), 0 needs_tier3**.
+- [x] **Verifikasi hasil**: trial balance **Rp421.434.000 = Rp421.434.000** (naik dari Rp380.345.000 sebelumnya, sesuai penambahan 92 transaksi baru, tetap seimbang). Skor ACS **tidak berubah** (56/100 Kuning — Growth 71.6/Stability 91.9/Risk 9.5 identik, karena April/Mei/Juni yang dipakai kalkulasi Growth semuanya sudah ada sebelumnya, tidak tersentuh script ini). **Streak gamifikasi: 109 hari** (naik drastis dari 0 — celah 7-9 Juli yang menyambung ke data lama membuat seluruh rentang 1 April–18 Juli jadi SATU rentetan tanpa putus; `last_activity_date` sekarang 18 Juli/hari ini).
+- [x] `npm run build` lolos (24 route, tidak berubah).
+
+> 📌 ~~Catatan tampilan kecil...~~ **DIPERBAIKI 18 Juli (sesi terpisah)** — lihat 3.5 di bawah.
+
+### 3.5 — Perbaikan tampilan GamificationCard untuk streak ≥30 — ✅ SELESAI & TERVERIFIKASI (18 Juli)
+Perbaikan tampilan MURNI (bug kosmetik dari 3.4 di atas) — `streakCalculator.ts` (`computeStreak`, `buildStreakNotification`) **tidak disentuh**, logic-nya sudah benar sejak awal (`git diff` kosong).
+
+- [x] Ditemukan: `buildStreakNotification()` sudah benar mengembalikan `tone: 'completed'` + pesan selebrasi untuk `currentStreak >= 30` — bug murni di `GamificationCard.tsx` yang SELALU render baris "Progres saat ini: X / 30 hari" apa pun tone-nya, jadi streak 109 tampil janggal "109 / 30 hari".
+- [x] `GamificationCard.tsx`: saat `notification.tone === 'completed'`, baris "Progres saat ini" sekarang render badge pil emerald "✓ Tercapai · {currentStreak} hari" (bukan pecahan) — total streak tetap ditampilkan sebagai info, bukan sebagai pecahan dari 30. Kondisi belum tercapai (progress/reset) tidak berubah, tetap "X / 30 hari" seperti semula.
+- [x] Grid 30 kotak: perilaku tidak berubah (tetap penuh/dibatasi 30 saat tercapai — itu representasi progres menuju target, bukan hitungan total, jadi sudah benar sejak awal). `aria-label` diperbaiki jadi "Tantangan 30 hari tercapai — total N hari berturut-turut" untuk state tercapai (sebelumnya juga bilang "N dari 30" yang janggal untuk screen reader).
+- [x] Diverifikasi live di `/dashboard/progres` (data Bu Sari, streak 109): banner "Selamat! Tantangan 30 Hari selesai — pencatatan konsisten 109 hari berturut-turut" (tidak berubah, sudah benar), baris progres sekarang **"Tercapai · 109 hari"**, grid 30/0 (penuh), aria-label benar — dicek via DOM/atribut, bukan asumsi visual (screenshot tidak bisa diambil di lingkungan sesi ini, konsisten dgn sesi-sesi sebelumnya).
+- [x] Mobile 360px: nol overflow dengan badge baru.
+- [x] `npm run build` lolos (24 route, tidak berubah).
+- [x] `git diff src/lib/gamification/streakCalculator.ts` — **kosong**, hanya `GamificationCard.tsx` yang berubah.
 
 ---
 
