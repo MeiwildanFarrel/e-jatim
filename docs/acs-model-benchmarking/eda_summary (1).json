@@ -1,0 +1,61 @@
+{
+  "n_rows": 307511,
+  "n_cols": 122,
+  "n_numeric_cols": 106,
+  "n_categorical_cols": 16,
+  "n_cols_with_missing": 67,
+  "n_cols_drop_candidate": 41,
+  "pct_missing_overall": 24.4,
+  "target_count_0": 282686,
+  "target_count_1": 24825,
+  "target_pct_0": 91.93,
+  "target_pct_1": 8.07,
+  "imbalance_ratio": 11.4,
+  "acs_growth_features": [
+    "EXT_SOURCE_1",
+    "EXT_SOURCE_2",
+    "EXT_SOURCE_3",
+    "AMT_INCOME_TOTAL"
+  ],
+  "acs_stability_features": [
+    "DAYS_EMPLOYED",
+    "CNT_FAM_MEMBERS",
+    "FLAG_OWN_CAR",
+    "FLAG_OWN_REALTY",
+    "AMT_ANNUITY"
+  ],
+  "acs_reputation_features": [],
+  "acs_risk_features": [
+    "DAYS_BIRTH",
+    "AMT_CREDIT",
+    "NAME_EDUCATION_TYPE",
+    "REGION_RATING_CLIENT",
+    "CNT_CHILDREN"
+  ],
+  "acs_total_proxy_features": 14,
+  "top10_corr_features": [
+    "EXT_SOURCE_3",
+    "EXT_SOURCE_2",
+    "EXT_SOURCE_1",
+    "DAYS_BIRTH",
+    "REGION_RATING_CLIENT_W_CITY",
+    "REGION_RATING_CLIENT",
+    "DAYS_LAST_PHONE_CHANGE",
+    "DAYS_ID_PUBLISH",
+    "REG_CITY_NOT_WORK_CITY",
+    "FLAG_EMP_PHONE"
+  ],
+  "top10_corr_values": [
+    -0.1789,
+    -0.1605,
+    -0.1553,
+    0.0782,
+    0.0609,
+    0.0589,
+    0.0552,
+    0.0515,
+    0.051,
+    0.046
+  ],
+  "anomaly_days_employed_count": 55374
+}
