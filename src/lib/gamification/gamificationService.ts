@@ -30,15 +30,47 @@ export interface GamificationProgress extends StreakResult {
 }
 
 /**
+ * Baca streak TERSIMPAN (bukan hitung ulang) — dipakai dashboard untuk
+ * render GamificationCard. Sama pola dengan getCreditScore.ts: proses
+ * TAMPILKAN dipisah dari proses HITUNG.
+ *
+ * ⚠️ Performa (18 Juli): sebelumnya `/dashboard/progres` memanggil
+ * `computeAndSaveStreak()` di SETIAP render — scan penuh `transactions`
+ * (paginated) + write ke `gamification_progress`, terukur ~530ms untuk
+ * 1.086 baris dan akan terus memburuk seiring data bertambah harian. Baca
+ * saja di sini (~65ms) — perhitungan sungguhan dipindah ke 3 titik pemicu:
+ * submit consent (`app/consent/actions.ts`), transaksi baru masuk lewat
+ * `/api/mock-snap/ingest`, dan tombol refresh manual (`refreshStreak()`
+ * server action di `app/dashboard/progres/actions.ts`).
+ */
+export async function getGamificationProgress(umkmId: string): Promise<GamificationProgress | null> {
+  const { data, error } = await supabaseAdmin
+    .from('gamification_progress')
+    .select('current_streak, longest_streak, last_activity_date, challenge_type, updated_at')
+    .eq('umkm_id', umkmId)
+    .eq('challenge_type', CHALLENGE_TYPE)
+    .limit(1)
+
+  if (error) throw new Error(error.message)
+  const row = data?.[0]
+  if (!row) return null
+
+  return {
+    currentStreak: row.current_streak,
+    longestStreak: row.longest_streak,
+    lastActivityDate: row.last_activity_date,
+    challengeType: row.challenge_type,
+    updatedAt: row.updated_at,
+  }
+}
+
+/**
  * Hitung streak "pencatatan_konsisten" dari `transactions` real, lalu simpan
- * ke `gamification_progress`. Dipanggil dari Server Component dashboard
- * setiap render (bukan lewat trigger terpisah seperti consent->skor ACS) —
- * tabel ini tidak punya titik pemicu alami di alur PoC, dan menghitung ulang
- * tiap load itu murah (satu query paginated) sekaligus menjaga data selalu
- * mutakhir tanpa job terjadwal terpisah. TIDAK ada unique constraint yang
- * diasumsikan di `gamification_progress`, jadi upsert dilakukan manual:
- * select baris (umkm_id, challenge_type) dulu, update kalau ada, insert
- * kalau belum.
+ * ke `gamification_progress`. Dipanggil HANYA dari 3 titik pemicu (lihat
+ * catatan di `getGamificationProgress()` di atas) — TIDAK LAGI dipanggil
+ * setiap kali dashboard dibuka. TIDAK ada unique constraint yang diasumsikan
+ * di `gamification_progress`, jadi upsert dilakukan manual: select baris
+ * (umkm_id, challenge_type) dulu, update kalau ada, insert kalau belum.
  */
 export async function computeAndSaveStreak(umkmId: string, referenceDate: Date = new Date()): Promise<GamificationProgress> {
   const activityDates = await fetchActivityDates(umkmId)

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/server'
+import { computeAndSaveStreak } from '@/lib/gamification/gamificationService'
 
 interface TransactionDetail {
   amount: { value: string; currency: string }
@@ -78,6 +79,17 @@ export async function POST(request: Request) {
 
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 })
+  }
+
+  // Transaksi baru masuk = salah satu dari 3 titik pemicu resmi untuk hitung
+  // ulang streak gamifikasi (lihat catatan di gamificationService.ts). Bukan
+  // penentu keberhasilan endpoint ini — kalau gagal, transaksi yang sudah
+  // ter-insert TETAP jadi sumber kebenaran, streak akan menyusul di
+  // pemicu lain (consent/refresh manual).
+  try {
+    await computeAndSaveStreak(umkm_id)
+  } catch (streakError) {
+    console.error('Gagal memperbarui streak gamifikasi setelah ingest:', streakError)
   }
 
   return NextResponse.json({

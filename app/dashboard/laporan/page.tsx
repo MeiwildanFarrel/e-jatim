@@ -17,10 +17,13 @@ export default async function LaporanPage({
   const params = await searchParams
   const umkmId = params.umkm_id ?? DEFAULT_UMKM_ID
 
-  const trialBalance = await getTrialBalance(umkmId)
+  // getTrialBalance (scan ledger_entries, ~300ms) dan getReportNotes (5 count
+  // paralel, ~200ms) independen satu sama lain — jalankan bersamaan, bukan
+  // berurutan (perf 18 Juli: ini tab dashboard paling lambat sebelumnya,
+  // ~500-950ms end-to-end karena dua panggilan ini sekuensial).
+  const [trialBalance, notes] = await Promise.all([getTrialBalance(umkmId), getReportNotes(umkmId)])
   const incomeStatement = buildIncomeStatement(trialBalance.rows)
   const balanceSheet = buildBalanceSheet(trialBalance.rows, incomeStatement.netIncome)
-  const notes = await getReportNotes(umkmId)
 
   return (
     <>

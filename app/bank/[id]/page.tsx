@@ -34,11 +34,15 @@ export default async function BankLoanDetailPage({ params }: { params: Promise<{
   if (!application) notFound()
 
   const umkmId = application.umkm_id
-  const trialBalance = await getTrialBalance(umkmId)
+  // 3 fetch independen — paralel (perf 18 Juli: sebelumnya sekuensial, ini
+  // halaman paling lambat di seluruh dashboard, ~700-750ms end-to-end).
+  const [trialBalance, notes, creditScore] = await Promise.all([
+    getTrialBalance(umkmId),
+    getReportNotes(umkmId),
+    getCreditScore(umkmId),
+  ])
   const incomeStatement = buildIncomeStatement(trialBalance.rows)
   const balanceSheet = buildBalanceSheet(trialBalance.rows, incomeStatement.netIncome)
-  const notes = await getReportNotes(umkmId)
-  const creditScore = await getCreditScore(umkmId)
 
   const status = STATUS_LABEL[application.status]
 

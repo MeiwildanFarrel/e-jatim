@@ -21,8 +21,8 @@ const STATUS_TEXT = {
 } as const
 
 export default async function BankLoanListPage() {
-  const pendingApps = await listSubmittedApplications()
-  const decidedApps = await listDecidedApplications()
+  // Dua fetch independen — paralel (perf 18 Juli).
+  const [pendingApps, decidedApps] = await Promise.all([listSubmittedApplications(), listDecidedApplications()])
 
   const totalPending = pendingApps.length
   const totalApproved = decidedApps.filter((a) => a.status === 'approved').length
@@ -132,7 +132,7 @@ export default async function BankLoanListPage() {
                         <p className="font-bold text-slate-800">{app.umkm_profiles?.business_name ?? '-'}</p>
                         <p className="text-xs text-slate-400">{app.umkm_profiles?.city ?? ''}</p>
                       </td>
-                      <td className="px-5 py-4 font-semibold tabular-nums text-slate-700">{formatRupiah(app.requested_amount)}</td>
+                      <td className="px-5 py-4 font-mono font-semibold tabular-nums text-slate-700">{formatRupiah(app.requested_amount)}</td>
                       <td className="px-5 py-4 text-slate-500">{formatDateID(app.created_at)}</td>
                       <td className="px-5 py-4">
                         {app.credit_scores ? (
@@ -192,7 +192,7 @@ export default async function BankLoanListPage() {
                         <p className="font-bold text-slate-800">{app.umkm_profiles?.business_name ?? '-'}</p>
                         <p className="text-xs text-slate-400">{app.umkm_profiles?.city ?? ''}</p>
                       </td>
-                      <td className="px-5 py-4 font-medium tabular-nums text-slate-600">{formatRupiah(app.requested_amount)}</td>
+                      <td className="px-5 py-4 font-mono font-medium tabular-nums text-slate-600">{formatRupiah(app.requested_amount)}</td>
                       <td className="px-5 py-4 text-slate-500">{app.reviewed_at ? formatDateID(app.reviewed_at) : '-'}</td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_BADGE[app.status as 'approved' | 'rejected']}`}>

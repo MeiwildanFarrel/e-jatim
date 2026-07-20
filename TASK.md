@@ -224,6 +224,58 @@ Perbaikan tampilan MURNI (bug kosmetik dari 3.4 di atas) — `streakCalculator.t
 
 ---
 
+### 3.6 — Perbaikan Performa Dashboard + Redesign Visual — ✅ SELESAI & TERVERIFIKASI (19 Juli)
+Sesi murni performa + tampilan. **Tidak ada perubahan** di `acsCalculator.ts`, `streakCalculator.ts`, `financialStatements.ts`, `trialBalance.ts`, `src/lib/classifier` — dikonfirmasi `git diff` kosong.
+
+**Bagian 1 — Investigasi & Perbaikan Performa:**
+- [x] **Akar masalah #1 dikonfirmasi**: `/dashboard/progres` memanggil `computeAndSaveStreak()` (scan penuh `transactions` + tulis ke DB) di SETIAP render — diukur ~530ms raw DB cost (1.086 baris, 2 round-trip fetch + select + update). Diperbaiki dengan pola yang sama seperti skor ACS: `getGamificationProgress()` baru (baca-saja, ~65ms) dipakai untuk TAMPILKAN; `computeAndSaveStreak()` dipindah ke 3 titik pemicu eksplisit — submit consent (`app/consent/actions.ts`), transaksi baru masuk lewat `/api/mock-snap/ingest`, dan tombol Refresh manual (`app/dashboard/progres/actions.ts`). Tombol Refresh serupa juga ditambahkan di tab Skor (`app/dashboard/skor/actions.ts`) untuk simetri. `updated_at`/`calculated_at` ditampilkan eksplisit di kedua kartu (transparansi kapan terakhir dihitung).
+- [x] **Akar masalah #2 dikonfirmasi**: 4 halaman melakukan `await` sekuensial untuk fetch yang saling independen — `/dashboard/laporan` (getTrialBalance + getReportNotes), `/bank/[id]` (getTrialBalance + getReportNotes + getCreditScore), `/dashboard` Ringkasan (getCreditScore + getLatestLoanApplication), `/bank` list (listSubmittedApplications + listDecidedApplications). Semua diparalelkan pakai `Promise.all` — **cara MENGHITUNG tidak berubah**, hanya kapan/urutan fetch dijalankan.
+- [x] **Dicek**: pola `.range()` loop paginasi (GOTCHA #4) di `trialBalance.ts` (3 round-trip, 2.062 baris, ~300ms) & `gamificationService.ts` — kontributor nyata tapi sekunder. **Sengaja TIDAK dikonversi ke RPC/view Postgres** sesi ini — akan menduplikasi logic agregasi (JS + SQL, dua tempat), risiko lebih tinggi daripada manfaatnya dibanding dua perbaikan di atas yang sudah dominan. Dicatat sebagai kandidat optimasi masa depan, bukan dieksekusi.
+- [x] **Dicek**: tidak ada `loading.tsx` di `app/dashboard/` maupun `app/bank/` manapun (0 hasil) — transisi terasa "macet"/blank. Ditambahkan 7 file `loading.tsx` (skeleton, palet slate sesuai DESIGN.md, primitif reusable di `app/dashboard/_components/Skeleton.tsx`, `animate-pulse` dimatikan untuk `prefers-reduced-motion`).
+- [x] **Dicek**: bundle/library berat — **bukan faktor**. `package.json` nol dependency animasi (landing page pakai CSS murni + IntersectionObserver native), root layout minimal (cuma font Geist).
+- [x] **Angka nyata sebelum → sesudah** (browser, steady-state, 3x per rute): `/dashboard/laporan` **~730ms → ~140ms** (-81%), `/bank/[id]` **~727ms → ~126ms** (-83%), `/dashboard/progres` **~331ms → ~127ms** (-62%), `/dashboard` **~250ms → ~93ms** (-63%), `/bank` **~155ms → ~68ms** (-56%), `/dashboard/ajukan-kur` **~160ms → ~92ms** (-43%), `/dashboard/skor` ~176→~180ms (sudah cepat sebelumnya, tidak berubah — read-only sejak awal).
+- [x] Tombol Refresh diverifikasi nyata (klik via dispatch event) — `gamification_progress.updated_at` berubah ke waktu klik (selisih 43 detik saat dicek), membuktikan trigger manual bekerja.
+
+**Bagian 2 — Redesign Visual:**
+- [x] `SpeedometerCard.tsx` dapat prop baru `variant?: 'hero' | 'compact'` (default `'compact'` = *zero* regresi visual di tempat lama). `variant="hero"` dipakai SATU kali di `/dashboard` Ringkasan — kartu navy (`bg-blue-950`) dengan aksen glow (teknik sama persis dengan hero landing page), gauge lebih besar, skor 5xl putih. Data/props (`CreditScoreRow`) sama persis di kedua varian — murni presentasi.
+- [x] Polish konsisten (`rounded-lg`→`rounded-2xl`, `shadow-sm transition-shadow hover:shadow-md`) di `IncomeStatementCard`, `BalanceSheetCard`, `NotesCard`, `LoanStatusCard`, `GamificationCard` — classNames saja, props/logic tidak tersentuh.
+- [x] `LogoMark` (SVG orisinal landing page) di-reuse di sidebar dashboard UMKM DAN header `/bank` — konsistensi brand, bukan logic baru.
+- [x] Header `/bank`: tekstur titik halus (radial-gradient, opacity rendah) + LogoMark — nuansa "alat kerja profesional", sengaja TIDAK dibuat "personal/motivational" seperti hero UMKM (beda treatment sesuai instruksi).
+- [x] Kontras diukur eksplisit (canvas + rasio WCAG, bukan asumsi) untuk kartu hero navy baru: judul/skor putih **14.65**, teks sekunder blue-200 **10.3**, disclaimer blue-100 **12.01** — semua AAA, angka identik dengan yang sudah divalidasi di hero landing page (palet warna direuse persis).
+- [x] **Ditemukan & diperbaiki saat verifikasi**: header baru `/dashboard/progres` (judul + tombol Refresh) overflow 20px di 360px karena `flex items-start justify-between` tanpa stacking mobile — diperbaiki dengan pola `flex-col sm:flex-row` + `min-w-0` (pola yang sama yang sudah terbukti aman di `/bank/[id]`), diterapkan ke halaman DAN skeleton loading-nya.
+- [x] Mobile 360px: nol overflow di semua 7 halaman (dashboard 5 tab + bank list + bank detail) setelah perbaikan di atas.
+- [x] **Semua angka/fungsi lama diverifikasi identik** (fetch HTML asli, bukan asumsi): skor 56/Kuning/71.6/91.9/9.5, trial balance seimbang, streak 109, data laporan `/dashboard/laporan` sama persis dengan `/bank/[id]` (reuse komponen sama, sumber sama).
+- [x] `npm run build` lolos (24 route, tidak berubah).
+
+> ⚠️ **Keterbatasan verifikasi visual (sama seperti sesi-sesi sebelumnya)**: renderer tab pane di lingkungan ini terpaku pada state skeleton/kosong pada beberapa pengecekan langsung (`innerText` kosong padahal HTML server sudah benar dan lengkap — dikonfirmasi lewat `fetch()` yang tidak bergantung render). ini konsisten dengan pola "tab dianggap hidden/background" yang berulang sepanjang sesi-sesi proyek ini, BUKAN bug fungsional — dibuktikan lewat perbandingan langsung: response HTML mentah selalu benar, DOM query (`querySelector`/`textContent`) selalu berhasil, hanya `innerText`/screenshot yang kadang terpaku. **Farrel: mohon cek sendiri secara visual di browser biasa untuk menilai rasa desainnya**, terutama kartu hero navy di Ringkasan dan header Bank bertekstur.
+
+---
+
+### 3.7 — Redesign Visual Dashboard (skill frontend-design) — ✅ SELESAI & TERVERIFIKASI (20 Juli)
+Redesign presentasi MURNI mengikuti skill `frontend-design`, tetap tunduk DESIGN.md (palet navy/slate/emerald/red, Geist, mobile-first). **Tidak ada perubahan logic** (`acsCalculator`, `streakCalculator`, `financialStatements`, `trialBalance`, `creditScoreService`, `loanApplications`, `classifier`) — dikonfirmasi `git diff --stat` untuk semua file itu **kosong**. Teks legal (disclaimer skor, consent) dipertahankan verbatim, cuma dibingkai ulang.
+
+**Konsep desain (satu tesis, satu signature):**
+- [x] **Tipografi motif "buku besar"**: semua angka finansial (Rupiah di laporan, komponen skor, streak, nominal KUR) pindah ke **Geist Mono** (`font-mono tabular-nums`) — font mono sudah ter-load sejak awal tapi belum pernah dipakai; ini mengikat identitas ledger dari landing page ke seluruh tabel.
+- [x] **Sidebar navy** (`bg-blue-950`) menggantikan sidebar putih — meneruskan "bingkai gelap" hero/footer landing. Item aktif dapat aksen emerald (bar kiri emerald-400 + latar `emerald-500/15` + ikon emerald-300); bottom-nav mobile tetap terang tapi item aktif dapat garis atas emerald. Header sidebar + LogoMark (reuse dari landing) dengan teks putih.
+- [x] **Speedometer dipoles**: rail dasar + 3 pita warna dengan **zona aktif ditonjolkan** (pita lain diredupkan opacity 0.32, mengarahkan mata tanpa mengubah makna warna), **tick di ambang 40 & 70** (batas warna sesungguhnya dari `SCORE_THRESHOLDS`), label skala 0/100 mono, **jarum meruncing** (polygon) + hub + dot ujung berwarna zona. Satu momen animasi: **jarum menyapu masuk** ke posisi skor saat load (`.gauge-needle`, CSS murni). Geometri diverifikasi: untuk skor 56 tip jarum di (123.5, 39.3) = angleForScore(56)=79.2° ✓.
+- [x] **SIGNATURE — Tantangan 30 Hari jadi "kartu stempel warung"** (`GamificationCard`): metafora loyalty card yang akrab bagi UMKM. Kop navy dengan counter mono besar; 30 sel — hari tercatat = stempel emerald bercentang, hari kosong = lingkaran putus-putus bernomor; latar bertitik meniru kertas kartu. Tantangan selesai → **cap "TERCAPAI" mendarat** miring −8° ala stempel tinta (`.stamp-seal`, animasi pantul sekali). Sel muncul berurutan halus (`.stamp-cell` staggered). Diverifikasi (streak 109 = completed): 30/30 sel terisi, seal "Tercapai · 109 hari beruntun", aria-label benar.
+- [x] **Laporan keuangan ditingkatkan**: tiap kartu (Laba Rugi, Neraca, Catatan) dapat header ber-ikon dalam kotak tinted, eyebrow section uppercase, garis baris rapi, angka mono, callout Laba/Neraca `rounded-lg` + ring. Warning `needs_tier3` tetap utuh.
+
+**Animasi & aksesibilitas:**
+- [x] 4 animasi baru (`gauge-needle`, `gauge-score`, `stamp-cell`, `stamp-seal`) di `globals.css` — semua tampil SEKALI saat load, nilai akhir benar di frame diam (jarum di posisi skor, sel/seal ter-render statis). `prefers-reduced-motion` mematikan semuanya (rule diverifikasi tersaji di CSS ter-serve; `.stamp-seal` tetap simpan rotasi −8° sebagai bagian desain, bukan animasi).
+- [x] **Kontras diukur eksplisit** (canvas + rasio WCAG) untuk sidebar navy: item aktif putih **14.69**, item inaktif blue-200 **10.33**, eyebrow emerald-300 **9.64**, header putih **14.69** — semua AAA. Kartu hero navy identik dengan validasi landing (14.65/12.01/10.3).
+- [x] Mobile 360px: **nol overflow** di semua 7 halaman (dashboard 5 tab + bank list + bank detail), termasuk grid stempel 30 lingkaran.
+
+**Verifikasi data & fungsi:**
+- [x] Semua angka/fungsi lama **identik** (fetch HTML server, bukan asumsi): trial balance Rp421.434.000 seimbang, skor 56/Kuning, Growth 71.6/Stability 91.9, streak 109, data `/dashboard/laporan` = `/bank/[id]` (reuse komponen sama). Nol error konsol & server.
+- [x] `npm run build` lolos (24 route). Bank dashboard ikut terangkat karena reuse `SpeedometerCard`/`IncomeStatementCard`/`BalanceSheetCard`/`NotesCard` yang sama.
+
+> ⚠️ **Catatan cache dev (bukan bug produksi)**: saat verifikasi sempat ketemu dev server menyajikan `globals.css` LAMA (rule animasi baru tidak muncul) — murni cache HMR Turbopack; `npm run build` produksi selalu benar. Diperbaiki dengan `rm -rf .next` + restart, lalu CSS baru terkonfirmasi ter-serve. **Kalau Farrel jalankan `npm run dev` dan animasi tidak muncul, hapus `.next` dan restart.**
+>
+> ⚠️ **Keterbatasan verifikasi visual (konsisten sepanjang proyek)**: screenshot/`innerText` via Browser pane tetap beku (renderer pane dianggap background); semua verifikasi via HTML server (`fetch`), DOM query (`querySelector`/`getComputedStyle`/`getBoundingClientRect`), dan pengukuran kontras canvas — semuanya berhasil. **Farrel: mohon lihat sendiri di browser biasa untuk menilai rasa desain**, terutama (1) kartu stempel Tantangan 30 Hari, (2) speedometer dengan jarum menyapu, (3) sidebar navy.
+
+---
+
 ## 🔜 MINGGU 4 (24–31 Juli) — Finalisasi & Submit
 
 Target resmi Anggota A: *"Finalisasi Bab 2 & 3 berdasarkan sistem yang benar-benar berfungsi — hindari overclaim fitur yang belum berjalan. Rekam demo 2–3 menit."*

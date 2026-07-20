@@ -5,11 +5,20 @@ export function IncomeStatementCard({ data }: { data: IncomeStatement }) {
   const isProfit = data.netIncome >= 0
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-6">
-      <h2 className="text-lg font-semibold text-slate-800">Laporan Laba Rugi</h2>
-      <p className="mb-4 text-sm text-slate-500">Pendapatan dikurangi Beban untuk periode berjalan</p>
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-900">
+          <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" aria-hidden="true" className="h-5 w-5 stroke-current">
+            <path d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">Laporan Laba Rugi</h2>
+          <p className="text-sm text-slate-500">Pendapatan dikurangi Beban untuk periode berjalan</p>
+        </div>
+      </div>
 
-      <h3 className="mb-2 text-sm font-medium text-slate-500">Pendapatan</h3>
+      <h3 className="mb-1 mt-5 text-xs font-semibold uppercase tracking-wider text-slate-400">Pendapatan</h3>
       <table className="mb-4 w-full text-sm">
         <tbody>
           {data.revenues.length === 0 && (
@@ -20,20 +29,20 @@ export function IncomeStatementCard({ data }: { data: IncomeStatement }) {
             </tr>
           )}
           {data.revenues.map((r) => (
-            <tr key={r.account_code}>
-              <td className="py-1 text-slate-700">{r.account_name}</td>
-              <td className="py-1 text-right tabular-nums text-slate-700">{formatRupiah(r.amount)}</td>
+            <tr key={r.account_code} className="border-b border-slate-50">
+              <td className="py-1.5 text-slate-600">{r.account_name}</td>
+              <td className="py-1.5 text-right font-mono tabular-nums text-slate-700">{formatRupiah(r.amount)}</td>
             </tr>
           ))}
-          <tr className="border-t border-slate-200 font-semibold">
-            <td className="py-1 text-slate-800">Total Pendapatan</td>
-            <td className="py-1 text-right tabular-nums text-slate-800">{formatRupiah(data.totalRevenue)}</td>
+          <tr className="border-t-2 border-slate-200 font-semibold">
+            <td className="py-1.5 text-slate-800">Total Pendapatan</td>
+            <td className="py-1.5 text-right font-mono tabular-nums text-slate-800">{formatRupiah(data.totalRevenue)}</td>
           </tr>
         </tbody>
       </table>
 
-      <h3 className="mb-2 text-sm font-medium text-slate-500">Beban</h3>
-      <table className="mb-4 w-full text-sm">
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Beban</h3>
+      <table className="mb-5 w-full text-sm">
         <tbody>
           {data.expenses.length === 0 && (
             <tr>
@@ -43,25 +52,25 @@ export function IncomeStatementCard({ data }: { data: IncomeStatement }) {
             </tr>
           )}
           {data.expenses.map((r) => (
-            <tr key={r.account_code}>
-              <td className="py-1 text-slate-700">{r.account_name}</td>
-              <td className="py-1 text-right tabular-nums text-slate-700">{formatRupiah(r.amount)}</td>
+            <tr key={r.account_code} className="border-b border-slate-50">
+              <td className="py-1.5 text-slate-600">{r.account_name}</td>
+              <td className="py-1.5 text-right font-mono tabular-nums text-slate-700">{formatRupiah(r.amount)}</td>
             </tr>
           ))}
-          <tr className="border-t border-slate-200 font-semibold">
-            <td className="py-1 text-slate-800">Total Beban</td>
-            <td className="py-1 text-right tabular-nums text-slate-800">{formatRupiah(data.totalExpense)}</td>
+          <tr className="border-t-2 border-slate-200 font-semibold">
+            <td className="py-1.5 text-slate-800">Total Beban</td>
+            <td className="py-1.5 text-right font-mono tabular-nums text-slate-800">{formatRupiah(data.totalExpense)}</td>
           </tr>
         </tbody>
       </table>
 
       <div
-        className={`flex items-center justify-between rounded-md px-4 py-3 ${
-          isProfit ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+        className={`flex items-center justify-between rounded-lg px-4 py-3 ring-1 ring-inset ${
+          isProfit ? 'bg-emerald-50 text-emerald-700 ring-emerald-100' : 'bg-red-50 text-red-700 ring-red-100'
         }`}
       >
         <span className="font-semibold">{isProfit ? 'Laba Bersih' : 'Rugi Bersih'}</span>
-        <span className="text-lg font-semibold tabular-nums">{formatRupiah(data.netIncome)}</span>
+        <span className="font-mono text-lg font-bold tabular-nums">{formatRupiah(data.netIncome)}</span>
       </div>
     </section>
   )

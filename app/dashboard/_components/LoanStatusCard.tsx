@@ -18,7 +18,7 @@ function reviewDurationText(createdAt: string, reviewedAt: string): string {
 export function LoanStatusCard({ application }: { application: LoanApplicationRow | null }) {
   if (!application) {
     return (
-      <section className="rounded-lg border border-slate-200 bg-white p-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
         <h2 className="text-lg font-semibold text-slate-800">Pengajuan KUR</h2>
         <p className="mt-2 text-sm italic text-slate-400">Belum ada pengajuan KUR — ajukan lewat tab &ldquo;Ajukan KUR&rdquo;.</p>
       </section>
@@ -28,7 +28,7 @@ export function LoanStatusCard({ application }: { application: LoanApplicationRo
   const style = STATUS_STYLE[application.status]
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-6">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-slate-800">Pengajuan KUR</h2>
         <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${style.badge}`}>
@@ -39,7 +39,7 @@ export function LoanStatusCard({ application }: { application: LoanApplicationRo
 
       <div className="mt-3 space-y-1.5 text-sm">
         <p className="text-slate-600">
-          Nominal diajukan: <strong className="tabular-nums text-slate-800">{formatRupiah(application.requested_amount)}</strong>
+          Nominal diajukan: <strong className="font-mono tabular-nums text-slate-800">{formatRupiah(application.requested_amount)}</strong>
         </p>
         <p className="text-slate-500">Diajukan: {formatDateID(application.created_at)}</p>
 

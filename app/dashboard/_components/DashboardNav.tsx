@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   {
     href: '/laporan',
     label: 'Laporan Keuangan',
+    shortLabel: 'Laporan',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" aria-hidden="true" className="h-5 w-5">
         <rect x="5" y="3" width="14" height="18" rx="2" />
@@ -66,6 +67,16 @@ const NAV_ITEMS = [
   },
 ]
 
+const LogoutIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" aria-hidden="true" className="h-5 w-5 stroke-current">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"
+    />
+  </svg>
+)
+
 export function DashboardNav({ variant }: { variant: 'sidebar' | 'bottom' }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -79,6 +90,9 @@ export function DashboardNav({ variant }: { variant: 'sidebar' | 'bottom' }) {
   })
 
   if (variant === 'sidebar') {
+    // Sidebar navy — meneruskan "bingkai gelap" identitas landing page. Item
+    // aktif ditandai bar emerald + latar emerald tipis (aksen warna, bukan
+    // sekadar highlight abu).
     return (
       <>
         <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Navigasi dashboard">
@@ -86,24 +100,29 @@ export function DashboardNav({ variant }: { variant: 'sidebar' | 'bottom' }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                item.isActive ? 'bg-blue-50 text-blue-900' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                item.isActive
+                  ? 'bg-emerald-500/15 text-white'
+                  : 'text-blue-200 hover:bg-white/5 hover:text-white'
               }`}
               aria-current={item.isActive ? 'page' : undefined}
             >
-              {item.icon}
+              {item.isActive && (
+                <span aria-hidden="true" className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-emerald-400" />
+              )}
+              <span className={item.isActive ? 'text-emerald-300' : 'text-blue-300 group-hover:text-emerald-300'}>
+                {item.icon}
+              </span>
               {item.label}
             </Link>
           ))}
         </nav>
-        <div className="border-t border-slate-100 p-3">
+        <div className="border-t border-white/10 p-3">
           <Link
             href="/"
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-blue-300 transition-colors hover:bg-red-500/15 hover:text-red-200"
           >
-            <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" aria-hidden="true" className="h-5 w-5 stroke-current">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-            </svg>
+            <LogoutIcon />
             Keluar
           </Link>
         </div>
@@ -111,28 +130,31 @@ export function DashboardNav({ variant }: { variant: 'sidebar' | 'bottom' }) {
     )
   }
 
+  // Bottom nav (mobile) — tetap terang, tapi item aktif dapat aksen emerald
+  // penuh (ikon + label + titik indikator), bukan cuma warna teks berubah.
   return (
     <nav className="flex items-stretch justify-around" aria-label="Navigasi dashboard">
       {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}
-          className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[11px] font-medium ${
-            item.isActive ? 'text-blue-900' : 'text-slate-500'
+          className={`relative flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 pb-2 pt-2.5 text-[11px] font-medium transition-colors ${
+            item.isActive ? 'text-emerald-600' : 'text-slate-500'
           }`}
           aria-current={item.isActive ? 'page' : undefined}
         >
+          {item.isActive && (
+            <span aria-hidden="true" className="absolute top-0 h-0.5 w-8 rounded-full bg-emerald-500" />
+          )}
           {item.icon}
-          <span className="truncate">{item.label}</span>
+          <span className="truncate">{item.shortLabel ?? item.label}</span>
         </Link>
       ))}
       <Link
         href="/"
-        className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[11px] font-medium text-slate-500 hover:text-red-600"
+        className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 pb-2 pt-2.5 text-[11px] font-medium text-slate-500 hover:text-red-600"
       >
-        <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" aria-hidden="true" className="h-5 w-5 stroke-current">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-        </svg>
+        <LogoutIcon />
         <span className="truncate">Keluar</span>
       </Link>
     </nav>

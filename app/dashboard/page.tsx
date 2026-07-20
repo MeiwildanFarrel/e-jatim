@@ -14,8 +14,11 @@ export default async function RingkasanPage({
   const params = await searchParams
   const umkmId = params.umkm_id ?? DEFAULT_UMKM_ID
 
-  const creditScore = await getCreditScore(umkmId)
-  const latestApplication = await getLatestLoanApplication(umkmId)
+  // Dua fetch independen — paralel, bukan sekuensial (perf 18 Juli).
+  const [creditScore, latestApplication] = await Promise.all([
+    getCreditScore(umkmId),
+    getLatestLoanApplication(umkmId),
+  ])
 
   return (
     <>
@@ -24,7 +27,7 @@ export default async function RingkasanPage({
         <p className="text-sm text-slate-500">Kondisi usaha Anda sekilas: skor kredit dan status pengajuan KUR</p>
       </header>
 
-      <SpeedometerCard data={creditScore} />
+      <SpeedometerCard data={creditScore} variant="hero" />
       <LoanStatusCard application={latestApplication} />
     </>
   )

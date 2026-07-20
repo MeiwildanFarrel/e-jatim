@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase/server'
 import { saveCreditScore } from '@/lib/scoring/creditScoreService'
+import { computeAndSaveStreak } from '@/lib/gamification/gamificationService'
 import { DEFAULT_UMKM_ID } from '@/lib/constants'
 
 /**
@@ -10,7 +11,9 @@ import { DEFAULT_UMKM_ID } from '@/lib/constants'
  * consent_records, lalu langsung hitung ulang skor ACS dari ledger real
  * (saveCreditScore membaca consent_records yang baru saja ditulis untuk
  * menentukan apakah komponen Reputation ikut dihitung — lihat
- * creditScoreService.ts). Alur mock PoC, tanpa auth sungguhan.
+ * creditScoreService.ts) DAN streak gamifikasi (salah satu dari 3 titik
+ * pemicu resmi, lihat gamificationService.ts). Alur mock PoC, tanpa auth
+ * sungguhan.
  */
 export async function submitConsent(formData: FormData) {
   const umkmId = (formData.get('umkm_id') as string | null) || DEFAULT_UMKM_ID
@@ -43,7 +46,7 @@ export async function submitConsent(formData: FormData) {
 
   if (error) throw new Error(error.message)
 
-  await saveCreditScore(umkmId)
+  await Promise.all([saveCreditScore(umkmId), computeAndSaveStreak(umkmId)])
 
   redirect(`/dashboard?umkm_id=${umkmId}`)
 }
